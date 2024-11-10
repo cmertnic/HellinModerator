@@ -1,6 +1,6 @@
 // Импорт необходимых модулей и функций
 const { Client, ChannelType, PermissionFlagsBits } = require('discord.js');
-const { createMainLogChannel, createLogChannel, createMutedRole } = require('../../events');
+const { createMainLogChannel, createLogChannel, createMutedRole,createRoles } = require('../../events');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { getServerSettings, saveServerSettings } = require('../../database/settingsDb');
 const { i18next, t } = require('../../i18n');
@@ -76,10 +76,15 @@ module.exports = {
             const mutedRoleMessage = await createMutedRole(interaction, serverSettings);
             responseMessage += `✅ ${mutedRoleMessage}\n`;
 
+            // Создание ролей для мужчин и женщин
+            const rolesToCreate = ['♂', '♀'];
+            const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
+            responseMessage += `${rolesCreationMessages}\n`;
+
             await interaction.followUp({ content: responseMessage + `✅ ${i18next.t('test-js_sucess')}`, ephemeral: true });
         } catch (error) {
             console.error(`Произошла ошибка: ${error.message}`);
-            return interaction.editReply({ content: `❌ ${i18next.t('Error')}`, ephemeral: true });
+            return interaction.editReply({ content: ` ${i18next.t('Error')}`, ephemeral: true });
         }
     }
 };

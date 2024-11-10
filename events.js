@@ -428,7 +428,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'NotAutomodChannels':
         case 'automodBlacklist':
         case 'automodBadLinks':
-            if (typeof value !== 'string' || value.length === 0) {
+            if (typeof value !== 'string' || value.trim().length === 0) { // Проверка на пустую строку
                 isValid = false;
                 errorMessage = (i18next.t(`settings-js_logchannel_error`, { settingKey: settingKey }));
             }
@@ -631,6 +631,12 @@ async function promptUserForSettingValue(interaction, settingKey) {
             await response.delete();
         }
 
+        // Проверка на пустую строку
+        if (!newValue || newValue.trim().length === 0) {
+            await interaction.followUp({ content: i18next.t('error_empty_input'), ephemeral: true });
+            return null; // Возвращаем null, чтобы выйти из функции
+        }
+
         return newValue;
     } catch (err) {
         console.error('Ошибка при получении нового значения настройки:', err);
@@ -638,6 +644,37 @@ async function promptUserForSettingValue(interaction, settingKey) {
         return null;
     }
 }
+async function createRoles(interaction, roleNames) {
+    const messages = [];
+
+    // Функция для генерации случайного цвета в шестнадцатеричном формате
+    function getRandomColor() {
+        const randomColor = Math.floor(Math.random() * 16777215).toString(16);
+        return `#${randomColor.padStart(6, '0')}`; // Добавляет нули в начале, если необходимо
+    }
+
+    for (const roleName of roleNames) {
+        let role = interaction.guild.roles.cache.find(r => r.name === roleName);
+        if (!role) {
+            try {
+                const color = getRandomColor(); // Генерируем случайный цвет
+                role = await interaction.guild.roles.create({
+                    name: roleName,
+                    color: color,
+                    permissions: []
+                });
+            } catch (error) {
+                console.error(i18next.t('events-js_mutedRole_error'),{roleName});
+                messages.push(i18next.t('events-js_mutedRole_error'),{roleName});
+            }
+        } else {
+            messages.push(i18next.t('events-js_mutedRole_exists'),{roleName});
+        }
+    }
+
+    return messages.join('\n');
+}
+
 // Экспортируем функции для использования в других файлах
 module.exports = {
     validateUserId,
@@ -660,5 +697,6 @@ module.exports = {
     handleButtonInteraction,
     displaySettings,
     createButton,
-    promptUserForSettingValue
+    promptUserForSettingValue,
+    createRoles
 };

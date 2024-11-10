@@ -37,9 +37,9 @@
     "events-js_logChannel_create": "channel {{channelName}} was created with the name: {{createdChannelName}}",
     "events-js_logChannel_exists": "channel {{channelName}} already exists with the name: {{createdChannelName}}",
     "events-js_logChannel_error": "error creating channel {{channelName}}",
-    "events-js_mutedRole_created": "role {{roleName}} has been created",
-    "events-js_mutedRole_error": "an error occurred while creating the role {{roleName}}",
-    "events-js_mutedRole_exists": "the role {{roleName}} already exists",
+    "events-js_mutedRole_created": "✅ role {{roleName}} has been created",
+    "events-js_mutedRole_error": "❌ an error occurred while creating the role {{roleName}}",
+    "events-js_mutedRole_exists": "✅ the role {{roleName}} already exists",
     "mutesDb-js_removeMute_member": "your mute on server {{guildName}} has been successfully removed.",
     "mutesDb-js_removeExpiredMutes_log": "- user mute <@{{userId}}> has expired.",
     "warningsDb-js_removeExpiredWarnings_log": "- user warning <@{{userId}}> has expired.",
@@ -333,5 +333,6 @@
     "verify-js_gender_changed_log": "<@{{member}}> changed gender to **{{gender}}**.",
     "verify-js_log_footer": "Moderator: {{moderator}}",
     "verify-js_no_roles": "user has no roles to replace",
-    "verify-js_role_assigned_message": "You have been verified by <@{{moderator}}>. If you have any feedback on the support team, please let me know! Feedback link: https://forms.gle/jGAELF5Ngatr9k1FA"
+    "verify-js_role_assigned_message": "You have been verified by <@{{moderator}}>. If you have any feedback on the support team, please let me know! Feedback link: https://forms.gle/jGAELF5Ngatr9k1FA",
+    "staff-js_description": "staff request"
 }
