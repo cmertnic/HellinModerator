@@ -31,6 +31,10 @@ module.exports = {
          * @param {CommandInteraction} interaction - объект Interaction от Discord.js
          */
     async execute(robot, interaction, database) {
+        if (interaction.user.bot) return;
+        if (interaction.channel.type === ChannelType.DM) {
+            return interaction.editReply(i18next.t('error_private_messages'));
+        }
         // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
         await interaction.deferReply({ ephemeral: true });
         let hasReplied = false; // Флаг для отслеживания, был ли отправлен ответ

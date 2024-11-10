@@ -14,7 +14,10 @@ module.exports = {
          * @param {CommandInteraction} interaction - объектInteraction от Discord.js
          */
     async execute(robot, interaction) {
-
+            if (interaction.user.bot) return;
+            if (interaction.channel.type === ChannelType.DM) {
+                return interaction.editReply(i18next.t('error_private_messages'));
+            }
         const commandCooldown = userCommandCooldowns.get(interaction.user.id);
         if (commandCooldown && commandCooldown.command === 'warnlist' && Date.now() < commandCooldown.endsAt) {
           const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
@@ -24,7 +27,7 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
         try {
             // Проверка, является ли пользователь ботом
-            if (interaction.user.bot) return;
+
 
             // Проверка, является ли канал частным сообщением
             if (interaction.channel.type === ChannelType.DM) {

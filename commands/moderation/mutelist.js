@@ -24,6 +24,9 @@ module.exports = {
     try {
       // Проверка, что пользователь не бот
       if (interaction.user.bot) return;
+      if (interaction.channel.type === ChannelType.DM) {
+          return interaction.editReply(i18next.t('error_private_messages'));
+      }
 
       // Проверка, что команда не используется в личных сообщениях
       if (interaction.channel.type === ChannelType.DM) {

@@ -9,7 +9,10 @@ module.exports = {
     .setDescription(i18next.t('language-js_description')),
 
   async execute(robot, interaction) {
-    if (interaction.user.bot) return; // Если пользователь бот, прерываем исполнение команды
+    if (interaction.user.bot) return;
+    if (interaction.channel.type === ChannelType.DM) {
+        return interaction.editReply(i18next.t('error_private_messages'));
+    } // Если пользователь бот, прерываем исполнение команды
     const commandCooldown = userCommandCooldowns.get(interaction.user.id);
     if (commandCooldown && commandCooldown.command === 'language' && Date.now() < commandCooldown.endsAt) {
       const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);

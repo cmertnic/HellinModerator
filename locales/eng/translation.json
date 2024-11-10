@@ -42,7 +42,7 @@
     "events-js_mutedRole_exists": "the role {{roleName}} already exists",
     "mutesDb-js_removeMute_member": "your mute on server {{guildName}} has been successfully removed.",
     "mutesDb-js_removeExpiredMutes_log": "- user mute <@{{userId}}> has expired.",
-    "warningsDb-js_removeExpiredWarnings_log": "- user warning {{userId}} has expired.",
+    "warningsDb-js_removeExpiredWarnings_log": "- user warning <@{{userId}}> has expired.",
     "warningsDb-js_removeMuteFromDatabase_member_send": "- your warning has expired.",
     "ban-js_description": "ban users",
     "ban-js_user": "user",
@@ -332,5 +332,6 @@
     "verify-js_gender_changed_log_title": "Gender Changed",
     "verify-js_gender_changed_log": "<@{{member}}> changed gender to **{{gender}}**.",
     "verify-js_log_footer": "Moderator: {{moderator}}",
-    "verify-js_no_roles": "user has no roles to replace"
+    "verify-js_no_roles": "user has no roles to replace",
+    "verify-js_role_assigned_message": "You have been verified by <@{{moderator}}>. If you have any feedback on the support team, please let me know! Feedback link: https://forms.gle/jGAELF5Ngatr9k1FA"
 }

@@ -28,6 +28,10 @@ module.exports = {
     .addStringOption(option => option.setName(REASON_OPTION_NAME).setDescription(i18next.t('ban-js_reason_description')).setRequired(false)),
 
   async execute(robot, interaction) {
+    if (interaction.user.bot) return;
+    if (interaction.channel.type === ChannelType.DM) {
+        return interaction.editReply(i18next.t('error_private_messages'));
+    }
     // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
     await interaction.deferReply({ ephemeral: true });
 

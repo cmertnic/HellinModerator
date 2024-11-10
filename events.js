@@ -200,9 +200,10 @@ async function sendPartAndDelete(context, part) {
         console.error('Ошибка при отправке или удалении сообщения:', error);
     }
 }
+
 // Функция для создания главного канала лоигрования
 async function createMainLogChannel(interaction, channelName, botMember, higherRoles, serverSettings) {
-    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles, serverSettings);
+    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
     if (result) {
         if (result.created) {
             serverSettings.logChannelName = result.channel.name;
@@ -215,8 +216,9 @@ async function createMainLogChannel(interaction, channelName, botMember, higherR
         return i18next.t('events-js_mainLogChannel_error');
     }
 }
-// Функция для получения данных и приссвоения правил для каналов лоигрования
-async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles, serverSettings) {
+
+// Функция получения или создания лог-канала
+async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles) {
     const message = i18next.t('events-js_logChannel_reason');
     let fetchedChannels = await guild.channels.fetch();
     const existingChannel = fetchedChannels.find(c => c.name === channelName && c.type === ChannelType.GuildText);
@@ -240,10 +242,6 @@ async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles,
                         id: botMember.id,
                         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
                     },
-                    {
-                        id: serverSettings.moderatorRoleId,
-                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
-                    },
                     ...moderators.map(member => ({
                         id: member.id,
                         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
@@ -259,13 +257,14 @@ async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles,
             return { channel, created: true };
         } catch (error) {
             console.error(`Ошибка при создании канала: ${error}`);
-            return { error: i18next.t('events-js_logChannel_error', { channelName }) };
+            return null; // Возвращаем null в случае ошибки
         }
     }
 }
-// Функция для создания побочных каналов лоигрования
-async function createLogChannel(interaction, channelName, botMember, higherRoles, serverSettings) {
-    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles, serverSettings);
+
+// Функция для создания побочных каналов логирования
+async function createLogChannel(interaction, channelName, botMember, higherRoles) {
+    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
     if (result) {
         if (result.created) {
             return i18next.t('events-js_logChannel_create', { channelName: channelName, createdChannelName: result.channel.name });
@@ -276,6 +275,7 @@ async function createLogChannel(interaction, channelName, botMember, higherRoles
         return i18next.t('events-js_logChannel_error', { channelName: channelName });
     }
 }
+
 // Функция для создания роли мута
 async function createMutedRole(interaction, serverSettings) {
     let mutedRole = interaction.guild.roles.cache.find(role => role.name === serverSettings.mutedRoleName);

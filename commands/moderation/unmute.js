@@ -62,7 +62,11 @@ module.exports = {
             } else {
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
             }
-
+            // Получаем члена бота и проверяем его разрешения
+            const botMember = interaction.guild.members.me;
+            if (!botMember.permissions.has('ModerateMembers') || botMember.roles.highest.comparePositionTo(memberToUnmute.roles.highest) <= 0) {
+                return interaction.editReply({ content: i18next.t('unmute-js_bot_permissions'), ephemeral: true });
+            }
             // Если канал для логов не найден, создаем его
             if (!logChannel) {
                 const channelNameToCreate = muteLogChannelNameUse ? muteLogChannelName : logChannelName;
@@ -82,11 +86,7 @@ module.exports = {
                 return interaction.editReply({ content: i18next.t('unmute-js_checks_failed'), ephemeral: true });
             }
 
-            // Получаем члена бота и проверяем его разрешения
-            const botMember = interaction.guild.members.me;
-            if (!botMember.permissions.has('ModerateMembers') || botMember.roles.highest.comparePositionTo(memberToUnmute.roles.highest) <= 0) {
-                return interaction.editReply({ content: i18next.t('unmute-js_bot_permissions'), ephemeral: true });
-            }
+
 
             // Проверка, находится ли пользователь в роли для мута
             if (!memberToUnmute.roles.cache.has(mutedRole.id)) {

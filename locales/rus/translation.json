@@ -42,7 +42,7 @@
     "events-js_mutedRole_exists": "Роль {{roleName}} уже существует",
     "mutesDb-js_removeMute_member": "Ваш мут на сервере {{guildName}} успешно снят.",
     "mutesDb-js_removeExpiredMutes_log": "- Мут пользователя <@{{userId}}> истек.",
-    "warningsDb-js_removeExpiredWarnings_log": "- предупреждение пользователя {{userId}} истекло.",
+    "warningsDb-js_removeExpiredWarnings_log": "- предупреждение пользователя <@{{userId}}> истекло.",
     "warningsDb-js_removeMuteFromDatabase_member_send": "- ваше предупреждение истекло.",
     "ban-js_description": "банить пользователей",
     "ban-js_user": "пользователь",
@@ -332,5 +332,7 @@
     "verify-js_gender_changed_log_title": "Гендер изменен",
     "verify-js_gender_changed_log": "<@{{member}}> получил гендер  **{{gender}}**.",
     "verify-js_log_footer": "Модератор: {{moderator}}",
-    "verify-js_no_roles": "у пользователя нет ролей для замены"
+    "verify-js_no_roles": "у пользователя нет ролей для замены",
+    "verify-js_role_assigned_message": "Вы были верифицированы пользователем <@{{moderator}}>. Если у вас есть отзывы о работе саппорта, пожалуйста, дайте знать! ссылка для отзывов:https://forms.gle/jGAELF5Ngatr9k1FA"
+    
 }
