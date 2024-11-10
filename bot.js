@@ -115,9 +115,9 @@ const rest = new REST().setToken(process.env.TOKEN);
     // Обработка выбора роли
     const selectedRoles = []; // Массив для хранения выбранных ролей
 
-    
-    
-  
+
+
+
     robot.on('ready', async () => {
       console.log(`${robot.user.username} готов вкалывать`);
       const guilds = robot.guilds.cache;
@@ -183,7 +183,30 @@ const rest = new REST().setToken(process.env.TOKEN);
         await interaction.reply({ content: 'Произошла ошибка при выполнении команды!', ephemeral: true });
       }
     });
+    // Событие при добавлении нового участника на сервер
+    robot.on('guildMemberAdd', async (member) => {
+      try {
+        // Получаем роль "Новичок"
+        const role = member.guild.roles.cache.find(r => r.name === 'Новичок');
 
+        if (role) {
+          // Выдаем роль пользователю
+          await member.roles.add(role);
+          console.log(`Выдана роль "Новичок" пользователю ${member.user.tag}`);
+        } else {
+          async function ensureRolesExist(interaction) {
+            const rolesToCreate = ['Новичок'];
+            const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
+        }
+          const roleCreationMessages = await ensureRolesExist(interaction);
+          if (roleCreationMessages) {
+              console.log(roleCreationMessages); // Логирование сообщений о создании ролей
+          }
+        }
+      } catch (error) {
+        console.error(`Ошибка при выдаче роли "Новичок": ${error.message}`);
+      }
+    });
     robot.on('messageCreate', async (message) => {
       if (!message.guild || message.author.bot) return;
 
@@ -272,136 +295,136 @@ const rest = new REST().setToken(process.env.TOKEN);
 
     const chosenRoles = []; // Массив для хранения выбранных ролей
     let selectedRole; // Переменная для хранения последней выбранной роли
-    
+
     robot.on(Events.InteractionCreate, async (interaction) => {
-        // Обработка выбора роли из выпадающего меню
-        if (interaction.isStringSelectMenu() && interaction.customId === 'roleSelect') {
-            // Проверяем наличие выбранных значений
-            if (!interaction.values || interaction.values.length === 0) {
-                console.error('Ошибка: interaction.values пустой или не определен.');
-                await interaction.reply({ content: 'Ошибка: не удалось получить выбранную роль.', ephemeral: true });
-                return;
-            }
-    
-            selectedRole = interaction.values[0]; // Сохраняем выбранную роль
-    
-            // Добавляем выбранную роль в массив
-            chosenRoles.push(selectedRole);
-    
-            const modal = new ModalBuilder()
-                .setCustomId('staffModal')
-                .setTitle('Форма заявки на роль');
-    
-            const textInput = new TextInputBuilder()
-                .setCustomId('textInput')
-                .setLabel('Ваше ФИО и возраст')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-                .setPlaceholder('Зубенко Михаил Петрович, 120');
-    
-            const actionRow = new ActionRowBuilder().addComponents(textInput);
-            modal.addComponents(actionRow);
-    
-            // Общие дополнительные вопросы для всех ролей
-            const additionalQuestions = [
-                { id: 'experience', label: 'Работали ли вы уже на серверах?', placeholder: 'Да, в Haru я там был крутым админом ....' },
-                { id: 'time', label: 'Какой у вас часовой пояс?', placeholder: 'GMT +3' },
-                { id: 'motivation', label: 'Почему вы хотите стать частью команды?', placeholder: 'Я крутой, могу не спать 18 часов подряд' }
-            ];
-    
-            // Добавляем специфические вопросы для роли "Ведущий"
-            if (selectedRole === 'role5') {
-                additionalQuestions.unshift({ id: 'microphoneModel', label: 'Какую модель микрофона вы используете?', placeholder: 'Razer' });
-            }
-    
-            // Добавляем дополнительные вопросы в модальное окно
-            additionalQuestions.forEach(question => {
-                const additionalInput = new TextInputBuilder()
-                    .setCustomId(question.id)
-                    .setLabel(question.label)
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true)
-                    .setPlaceholder(question.placeholder);
-    
-                const additionalActionRow = new ActionRowBuilder().addComponents(additionalInput);
-                modal.addComponents(additionalActionRow);
-            });
-    
-            await interaction.showModal(modal);
+      // Обработка выбора роли из выпадающего меню
+      if (interaction.isStringSelectMenu() && interaction.customId === 'roleSelect') {
+        // Проверяем наличие выбранных значений
+        if (!interaction.values || interaction.values.length === 0) {
+          console.error('Ошибка: interaction.values пустой или не определен.');
+          await interaction.reply({ content: 'Ошибка: не удалось получить выбранную роль.', ephemeral: true });
+          return;
         }
-    
-        // Обработка отправки модального окна
-        if (interaction.customId === 'staffModal') {
-            try {
-                const userInput = interaction.fields.getTextInputValue('textInput');
-    
-                // Получаем выбранные роли
-                const selectedRoleLabels = chosenRoles.map(role => {
-                    const option = interaction.message.components[0].components[0].options.find(opt => opt.value === role);
-                    return option ? option.label : null;
-                }).filter(label => label !== null);
-    
-                if (selectedRoleLabels.length === 0) {
-                    console.error('Ошибка: выбранные роли не найдены.');
-                    await interaction.reply({ content: 'Ошибка: выбранные роли не найдены.', ephemeral: true });
-                    return;
-                }
-    
-                // Получаем ответы на дополнительные вопросы
-                const additionalInputs = {
-                    microphoneModel: selectedRole === 'role5' ? interaction.fields.getTextInputValue('microphoneModel') : 'Не указано',
-                    experience: interaction.fields.getTextInputValue('experience') || 'Не указано',
-                    motivation: interaction.fields.getTextInputValue('motivation') || 'Не указано',
-                    time: interaction.fields.getTextInputValue('time') || 'Не указано'
-                };
-    
-                // Укажите имя канала, куда будут отправляться заявки
-                const channelName = "заявки"; 
-                let logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelName && ch.type === 'GUILD_TEXT');
-    
-                // Если канал не найден, создаем его
-                if (!logChannel) {
-                    const channelNameToCreate = channelName; 
-                    const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
-                    const roles = interaction.guild.roles.cache;
-                    const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-                    
-                    const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles);
-    
-                    if (logChannelCreationResult.startsWith('Ошибка')) {
-                        return interaction.reply({ content: logChannelCreationResult, ephemeral: true });
-                    }
-    
-                    logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-                }
-    
-                // Отправляем сообщение в лог-канал
-                if (logChannel) {
-                    const userMention = `<@${interaction.user.id}>`; // Упоминание пользователя
-    
-                    await logChannel.send(`**Новая заявка на роль:** ${selectedRoleLabels.join(', ')}\n` +
-                        `**Имя пользователя:** ${userMention} (${userInput})\n\n` +
-                        `**Дополнительные вопросы:**\n` +
-                        `🔊 **Модель микрофона:** ${additionalInputs.microphoneModel}\n` +
-                        `📜 **Опыт:** ${additionalInputs.experience}\n` +
-                        `💬 **Мотивация:** ${additionalInputs.motivation}\n` +
-                        `🌍 **Часовой пояс:** ${additionalInputs.time}`);
-    
-                    await interaction.reply({ content: `Вы подали заявку на роли: ${selectedRoleLabels.join(', ')}\nВы ввели: ${userInput}\nДополнительные ответы: Модель микрофона: ${additionalInputs.microphoneModel}, Опыт: ${additionalInputs.experience}, Мотивация: ${additionalInputs.motivation}\nЧасовой пояс: ${additionalInputs.time}`, ephemeral: true });
-                } else {
-                    console.error('Канал для заявок не найден.');
-                    await interaction.reply({ content: 'Ошибка: канал для заявок не найден.', ephemeral: true });
-                }
-                chosenRoles.length = 0; // Очищаем массив выбранных ролей
-                selectedRole = null; // Сбрасываем выбранную роль
-            } catch (error) {
-                console.error('Ошибка при обработке модального окна:', error);
-                await interaction.reply({ content: 'Произошла ошибка при обработке вашей заявки. Пожалуйста, попробуйте снова.', ephemeral: true });
-            }
+
+        selectedRole = interaction.values[0]; // Сохраняем выбранную роль
+
+        // Добавляем выбранную роль в массив
+        chosenRoles.push(selectedRole);
+
+        const modal = new ModalBuilder()
+          .setCustomId('staffModal')
+          .setTitle('Форма заявки на роль');
+
+        const textInput = new TextInputBuilder()
+          .setCustomId('textInput')
+          .setLabel('Ваше ФИО и возраст')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setPlaceholder('Зубенко Михаил Петрович, 120');
+
+        const actionRow = new ActionRowBuilder().addComponents(textInput);
+        modal.addComponents(actionRow);
+
+        // Общие дополнительные вопросы для всех ролей
+        const additionalQuestions = [
+          { id: 'experience', label: 'Работали ли вы уже на серверах?', placeholder: 'Да, в Haru я там был крутым админом ....' },
+          { id: 'time', label: 'Какой у вас часовой пояс?', placeholder: 'GMT +3' },
+          { id: 'motivation', label: 'Почему вы хотите стать частью команды?', placeholder: 'Я крутой, могу не спать 18 часов подряд' }
+        ];
+
+        // Добавляем специфические вопросы для роли "Ведущий"
+        if (selectedRole === 'role5') {
+          additionalQuestions.unshift({ id: 'microphoneModel', label: 'Какую модель микрофона вы используете?', placeholder: 'Razer' });
         }
+
+        // Добавляем дополнительные вопросы в модальное окно
+        additionalQuestions.forEach(question => {
+          const additionalInput = new TextInputBuilder()
+            .setCustomId(question.id)
+            .setLabel(question.label)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setPlaceholder(question.placeholder);
+
+          const additionalActionRow = new ActionRowBuilder().addComponents(additionalInput);
+          modal.addComponents(additionalActionRow);
+        });
+
+        await interaction.showModal(modal);
+      }
+
+      // Обработка отправки модального окна
+      if (interaction.customId === 'staffModal') {
+        try {
+          const userInput = interaction.fields.getTextInputValue('textInput');
+
+          // Получаем выбранные роли
+          const selectedRoleLabels = chosenRoles.map(role => {
+            const option = interaction.message.components[0].components[0].options.find(opt => opt.value === role);
+            return option ? option.label : null;
+          }).filter(label => label !== null);
+
+          if (selectedRoleLabels.length === 0) {
+            console.error('Ошибка: выбранные роли не найдены.');
+            await interaction.reply({ content: 'Ошибка: выбранные роли не найдены.', ephemeral: true });
+            return;
+          }
+
+          // Получаем ответы на дополнительные вопросы
+          const additionalInputs = {
+            microphoneModel: selectedRole === 'role5' ? interaction.fields.getTextInputValue('microphoneModel') : 'Не указано',
+            experience: interaction.fields.getTextInputValue('experience') || 'Не указано',
+            motivation: interaction.fields.getTextInputValue('motivation') || 'Не указано',
+            time: interaction.fields.getTextInputValue('time') || 'Не указано'
+          };
+
+          // Укажите имя канала, куда будут отправляться заявки
+          const channelName = "заявки";
+          let logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelName && ch.type === 'GUILD_TEXT');
+
+          // Если канал не найден, создаем его
+          if (!logChannel) {
+            const channelNameToCreate = channelName;
+            const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
+            const roles = interaction.guild.roles.cache;
+            const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+
+            const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles);
+
+            if (logChannelCreationResult.startsWith('Ошибка')) {
+              return interaction.reply({ content: logChannelCreationResult, ephemeral: true });
+            }
+
+            logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+          }
+
+          // Отправляем сообщение в лог-канал
+          if (logChannel) {
+            const userMention = `<@${interaction.user.id}>`; // Упоминание пользователя
+
+            await logChannel.send(`**Новая заявка на роль:** ${selectedRoleLabels.join(', ')}\n` +
+              `**Имя пользователя:** ${userMention} (${userInput})\n\n` +
+              `**Дополнительные вопросы:**\n` +
+              `🔊 **Модель микрофона:** ${additionalInputs.microphoneModel}\n` +
+              `📜 **Опыт:** ${additionalInputs.experience}\n` +
+              `💬 **Мотивация:** ${additionalInputs.motivation}\n` +
+              `🌍 **Часовой пояс:** ${additionalInputs.time}`);
+
+            await interaction.reply({ content: `Вы подали заявку на роли: ${selectedRoleLabels.join(', ')}\nВы ввели: ${userInput}\nДополнительные ответы: Модель микрофона: ${additionalInputs.microphoneModel}, Опыт: ${additionalInputs.experience}, Мотивация: ${additionalInputs.motivation}\nЧасовой пояс: ${additionalInputs.time}`, ephemeral: true });
+          } else {
+            console.error('Канал для заявок не найден.');
+            await interaction.reply({ content: 'Ошибка: канал для заявок не найден.', ephemeral: true });
+          }
+          chosenRoles.length = 0; // Очищаем массив выбранных ролей
+          selectedRole = null; // Сбрасываем выбранную роль
+        } catch (error) {
+          console.error('Ошибка при обработке модального окна:', error);
+          await interaction.reply({ content: 'Произошла ошибка при обработке вашей заявки. Пожалуйста, попробуйте снова.', ephemeral: true });
+        }
+      }
     });
 
-  
+
     function setupCronJobs() {
       cron.schedule('*/2 * * * *', async () => {
         console.log('Запуск задачи по расписанию для удаления истекших предупреждений и мутов.');

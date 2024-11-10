@@ -1,7 +1,7 @@
 // Импорт необходимых модулей и функций
-const { Client, SlashCommandBuilder, ChannelType, EmbedBuilder } = require('discord.js');
+const { createRoles, createLogChannel } = require('../../events');
+const { Client, ChannelType, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createLogChannel } = require('../../events');
 const { i18next, t } = require('../../i18n');
 
 const USER_OPTION_NAME = i18next.t('unban-js_user');
@@ -11,7 +11,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unban')
         .setDescription(i18next.t('unban-js_description'))
-        .addUserOption(option =>
+        .addUserOption (option =>
             option.setName(USER_OPTION_NAME)
                 .setDescription(i18next.t('unban-js_user_description'))
                 .setRequired(true)
@@ -31,9 +31,6 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            let userId;
-            let reason;
-
             // Предварительные проверки
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
@@ -41,77 +38,77 @@ module.exports = {
             }
 
             // Получение ID пользователя и причины разблокировки
-            userId = interaction.options.getUser(USER_OPTION_NAME).id;
-            reason = interaction.options.getString(REASON_OPTION_NAME) || i18next.t('defaultReason');
+            const user = interaction.options.getUser (USER_OPTION_NAME);
+            if (!user) {
+                return interaction.editReply({ content: i18next.t('unban-js_user_not_found'), ephemeral: true });
+            }
 
-            const member = interaction.member;
-            const botMember = await interaction.guild.members.fetch(robot.user.id);
+            const userId = user.id; // Получаем ID пользователя
+            const reason = interaction.options.getString(REASON_OPTION_NAME) || i18next.t('defaultReason');
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const logChannelName = serverSettings.logChannelName;
-            const banLogChannelName = serverSettings.banLogChannelName;
-            const banLogChannelNameUse = serverSettings.banLogChannelNameUse;
+            const { logChannelName, logChannelNameUse } = serverSettings;
+
+            // Проверка наличия роли "Ban"
+            const banRole = interaction.guild.roles.cache.find(role => role.name === 'Ban');
+            if (!banRole) {
+                await createRoles(interaction, ['Ban']);
+            }
 
             // Получение канала для логирования
             let logChannel;
-            if (banLogChannelNameUse) {
-                logChannel = interaction.guild.channels.cache.find(ch => ch.name === banLogChannelName);
+            if (logChannelNameUse) {
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
             } else {
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
             }
 
             // Проверка наличия канала для логирования
             if (!logChannel) {
-                const channelNameToCreate = banLogChannelNameUse ? banLogChannelName : logChannelName;
+                const channelNameToCreate = logChannelNameUse ? logChannelName : logChannelName;
                 const roles = interaction.guild.roles.cache;
+                const botMember = interaction.guild.members.me;
                 const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-                const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
-
-                if (logChannelCreationResult.startsWith('Ошибка')) {
-                    return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
-                }
-
-                // Переопределяем переменную logChannel, так как она теперь может содержать новый канал
-                logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-            }
-
-            // Проверки наличия необходимых элементов
-            if (!userId) {
-                return interaction.editReply({ content: i18next.t('error_id_or_tag'), ephemeral: true });
-
+                await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
             }
 
             // Проверка прав пользователя и бота
-            if (!member.permissions.has('BanMembers')) {
-                return interaction.editReply({ content: i18next.t('BanMembers_user_check'), ephemeral: true });
+            const botMember = interaction.guild.members.me;
+            if (!botMember.permissions.has('ManageRoles') || botMember.roles.highest.comparePositionTo(banRole) <= 0) {
+                return interaction.editReply({ content: i18next.t('unban-js_bot_permissions'), ephemeral: true });
             }
 
-            if (!botMember.permissions.has('BanMembers')) {
-                return interaction.editReply({ content: i18next.t('BanMembers_bot_check'), ephemeral: true });
+            // Проверка, имеет ли пользователь роль "Ban"
+            const memberToUnban = interaction.guild.members.cache.get(userId);
+            if (!memberToUnban || !memberToUnban.roles.cache.has(banRole.id)) {
+                return interaction.editReply({ content: i18next.t('unban-js_user_not_blocked', { userId: userId }), ephemeral: true });
             }
 
-            // Проверка, заблокирован ли пользователь
-            const bans = await interaction.guild.bans.fetch();
-            if (!bans.has(userId)) {
-                return interaction.editReply({ content: i18next.t('unban-js_user_not_blocked'), ephemeral: true });
-            }
+            // Удаление роли "Ban" у пользователя
+            await memberToUnban.roles.remove(banRole, reason);
 
-            // Разблокировка пользователя
-            await interaction.guild.members.unban(userId, { reason });
-
-            // Отправка сообщения в канал логирования
-            const EmbedUnban = new EmbedBuilder()
-                .setColor(0x0099FF) // Измените цвет по желанию
+            // Создание embed для лога в канале логов
+            const embed = new EmbedBuilder()
+                .setColor(0x0099FF)
                 .setTitle(i18next.t('unban-js_unban_user_title'))
-                .setDescription(i18next.t(`unban-js_unban_user_log_channel`, { userId: userId, reason: reason }))
+                .setDescription(i18next.t('unban-js_unban_user_log_channel', { userId: userId, reason }))
                 .setTimestamp()
                 .setFooter({ text: i18next.t('unban-js_unban_user_footer', { moderator: interaction.user.tag }) });
 
-            await logChannel.send({ embeds: [EmbedUnban] });
+            // Отправка embed в канал логов
+            await logChannel.send({ embeds: [embed] });
 
-            // Отправка сообщения о завершении выполнения команды
-            await interaction.editReply({ content: i18next.t(`unban-js_unban_user_log_moderator`, { userId: userId, reason: reason }), ephemeral: true });
+            // Уведомление пользователя
+            try {
+                await user.send(i18next.t('unban-js_unban_notification_description', { guild: interaction.guild.name}));
+            } catch (error) {
+                console.error(`Не удалось отправить сообщение пользователю: ${error.message}`);
+            }
+
+            // Отправка ответа в чат с результатом разблокировки
+            await interaction.editReply({ content: i18next.t('unban-js_unban_user_log_moderator', { userId: userId, reason: reason }), ephemeral: true });
         } catch (error) {
             console.error(`Произошла ошибка: ${error.message}`);
             return interaction.editReply({ content: i18next.t('Error'), ephemeral: true });

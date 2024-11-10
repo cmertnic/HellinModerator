@@ -330,9 +330,22 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
 
     if (muteNotice && memberToMute) {
         try {
-            await memberToMute.send(i18next.t('mute-js_user_message', { guildName: interaction.guild.name, durationn: durationn, reasonMessage: reasonMessage }));
-        } catch {
-
+            const embed = new EmbedBuilder()
+                .setColor('#FFA500') // Color of the embed (orange for mute)
+                .setDescription(
+                    i18next.t('mute-js_user_message', {
+                        moderator: interaction.user.id,
+                        guildName: interaction.guild.name,
+                        durationn: durationn,
+                        reasonMessage: reasonMessage,
+                    })
+                )
+                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1305191258385416274/c8fd2f8d8fedab528cc4fa3315e1755c.gif?ex=67322195&is=6730d015&hm=451d13a1d9436ffe86b5b8f30c62598138706feca1c6824daea7bc8fd56f1714&=')
+                .setTimestamp();
+    
+            await memberToMute.send({ embeds: [embed] });
+        } catch (error) {
+            console.error('Ошибка отправки сообщения:', error);
         }
     }
 
@@ -384,17 +397,25 @@ async function notifyUserAndLogWarn(interaction, memberToWarn, formattedDuration
 
     if (warningsNotice && memberToWarn) {
         try {
-            await memberToWarn.send(
-                t('warn-js_error_message_user', {
-                    guildname: interaction.guild.name,
-                    formattedDuration,
-                    reason,
-                })
-            );
+            const embed = new EmbedBuilder()
+                .setColor('#FF0000') // Color of the embed
+                .setDescription(
+                    t('warn-js_error_message_user', {
+                        moderator: interaction.user.id,
+                        guildname: interaction.guild.name,
+                        formattedDuration,
+                        reason,
+                    })
+                )
+                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1305191258385416274/c8fd2f8d8fedab528cc4fa3315e1755c.gif?ex=67322195&is=6730d015&hm=451d13a1d9436ffe86b5b8f30c62598138706feca1c6824daea7bc8fd56f1714&=') 
+                .setTimestamp();
+    
+            await memberToWarn.send({ embeds: [embed] });
         } catch (error) {
             console.error('Ошибка отправки сообщения:', error);
         }
     }
+    
 
     try {
         const EmbedWarnUser = new EmbedBuilder()
