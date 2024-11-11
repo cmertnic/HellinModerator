@@ -261,7 +261,39 @@ async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles)
         }
     }
 }
+async function getOrCreateVoiceChannel(guild, channelName, botMember) {
+    const fetchedChannels = await guild.channels.fetch();
+    const existingChannel = fetchedChannels.find(c => c.name === channelName && c.type === ChannelType.GuildVoice);
 
+    if (existingChannel) {
+        return { channel: existingChannel, created: false };
+    } else {
+        const everyoneRole = guild.roles.everyone;
+
+        try {
+            const channel = await guild.channels.create({
+                name: channelName,
+                type: ChannelType.GuildVoice,
+                permissionOverwrites: [
+                    {
+                        id: everyoneRole.id,
+                        allow: [PermissionFlagsBits.Connect]
+                    },
+                    {
+                        id: botMember.id,
+                        allow: [PermissionFlagsBits.Connect]
+                    }
+                ],
+                reason: i18next.t('events-js_logChannel_reason')
+            });
+
+            return { channel, created: true };
+        } catch (error) {
+            console.error(`Ошибка при создании канала: ${error}`);
+            return null; // Возвращаем null в случае ошибки
+        }
+    }
+}
 // Функция для создания побочных каналов логирования
 async function createLogChannel(interaction, channelName, botMember, higherRoles) {
     const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
@@ -719,5 +751,6 @@ module.exports = {
     displaySettings,
     createButton,
     promptUserForSettingValue,
-    createRoles
+    createRoles,
+    getOrCreateVoiceChannel
 };

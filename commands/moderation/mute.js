@@ -14,20 +14,20 @@ const TIME_OPTION_NAME = i18next.t('mute-js_time');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('mute')
-        .setDescription(i18next.t('mute-js_description'))
+        .setDescription('Замутить пользователя')
         .addUserOption(option =>
             option.setName(USER_OPTION_NAME)
-                .setDescription(i18next.t('mute-js_user_description'))
+                .setDescription('ID или упоминание пользователя')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName(REASON_OPTION_NAME)
-                .setDescription(i18next.t('mute-js_reason_description'))
+                .setDescription('причина мута')
                 .setRequired(false)
         )
         .addStringOption(option =>
             option.setName(TIME_OPTION_NAME)
-                .setDescription(i18next.t('mute-js_time_description'))
+                .setDescription('время мута (пример 1d 1h 10m )')
                 .setRequired(false)
         ),
     /**
@@ -42,8 +42,8 @@ module.exports = {
             // Проверки и инициализация переменных
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply(i18next.t('error_private_messages'));
-            }
+                return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+              }
 
             const serverSettings = await getServerSettings(interaction.guild.id);
             const mutedRoleName = serverSettings.mutedRoleName;

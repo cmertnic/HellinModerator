@@ -1,7 +1,7 @@
 const { Client, ChannelType, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createLogChannel,createRoles } = require('../../events');
+const { createLogChannel, createRoles } = require('../../events');
 
 async function ensureRolesExist(interaction) {
     const rolesToCreate = ['♂', '♀'];
@@ -11,38 +11,38 @@ async function ensureRolesExist(interaction) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('verify')
-        .setDescription(i18next.t('verify-js_description'))
+        .setDescription('verify-js_description')
         .addUserOption(option => option
             .setName('user')
-            .setDescription(i18next.t('verify-js_user_description'))
+            .setDescription('Верификация пользователя')
             .setRequired(true))
         .addStringOption(option => option
             .setName('action')
-            .setDescription(i18next.t('verify-js_action'))
+            .setDescription('Выберите действие')
             .setRequired(true)
             .addChoices(
-                { name: i18next.t('verify-js_give_role'), value: 'give_role' },
-                { name: i18next.t('verify-js_deny_access'), value: 'deny_access' },
-                { name: i18next.t('verify-js_change_gender'), value: 'change_gender' }
+                { name: ('Выдать роль'), value: 'give_role' },
+                { name: ('Недопуск'), value: 'deny_access' },
+                { name: ('Изменить гендер'), value: 'change_gender' }
             ))
         .addStringOption(option => option
-            .setName('gender')
+            .setName('gender') // Изменено с 'Гендер' на 'gender'
             .setDescription('Выберите гендер пользователя (необязательно)')
             .setRequired(false)
             .addChoices(
-                { name: i18next.t('verify-js_Man'), value: 'male' },
-                { name: i18next.t('verify-js_Woman'), value: 'female' }
+                { name: i18next.t('Мужчина'), value: 'male' },
+                { name: i18next.t('Женщина'), value: 'female' }
             )),
     async execute(robot, interaction) {
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
         }
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            const userIdToVerify = interaction.options.getUser('user').id;
-            const action = interaction.options.getString('action');
+            const userIdToVerify = interaction.options.getUser ('user').id; // Изменено с 'Пользователь' на 'user'
+            const action = interaction.options.getString('action'); // Изменено с 'Действие' на 'action'
             const memberToVerify = await interaction.guild.members.fetch(userIdToVerify);
 
             if (!memberToVerify) {
@@ -52,7 +52,7 @@ module.exports = {
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
             const { logChannelName } = serverSettings;
-            const gender = interaction.options.getString('gender'); // Получаем значение gender
+            const gender = interaction.options.getString('gender'); // Изменено с 'Гендер' на 'gender'
             const botMember = interaction.guild.members.me;
             let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
 
@@ -78,10 +78,8 @@ module.exports = {
                 console.log(roleCreationMessages); // Логирование сообщений о создании ролей
             }
 
-
             switch (action) {
                 case 'give_role':
-                    console.log('Executing give_role action');
                     let roleToAssign;
                     if (gender === 'male') {
                         roleToAssign = interaction.guild.roles.cache.find(role => role.name === '♂');
@@ -99,7 +97,11 @@ module.exports = {
 
                         await memberToVerify.roles.add(roleToAssign);
                         await interaction.editReply({ content: i18next.t('verify-js_role_add', { rolename: roleToAssign.name, userIdToVerify: userIdToVerify }), ephemeral: true });
-
+                        // Убираем роль "Новичок", если она есть
+                        const rookieRole = interaction.guild.roles.cache.find(role => role.name === 'Новичок');
+                        if (rookieRole && memberToVerify.roles.cache.has(rookieRole.id)) {
+                            await memberToVerify.roles.remove(rookieRole);
+                        }
                         // Отправка личного сообщения пользователю
                         try {
                             await memberToVerify.send(i18next.t('verify-js_role_assigned_message', { rolename: roleToAssign.name, moderator: interaction.user.id }));

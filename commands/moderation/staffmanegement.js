@@ -1,7 +1,7 @@
-const { Client, ChannelType, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { ChannelType, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createLogChannel, createRoles } = require('../../events');
+const { createRoles } = require('../../events');
 
 async function ensureRolesExist(interaction) {
     const rolesToCreate = ['Саппорт', 'Ведущий', 'Модератор', 'Ивентер', 'Контрол', 'Креатив'];
@@ -11,18 +11,18 @@ async function ensureRolesExist(interaction) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staffmanagement')
-        .setDescription(i18next.t('staffmanagement-js_description'))
-        .addUserOption(option => option
+        .setDescription('Управление ролями сотрудников')
+        .addUserOption (option => option
             .setName('user')
-            .setDescription(i18next.t('staffmanagement-js_user_description'))
+            .setDescription('Пользователь, которому нужно назначить или снять роль')
             .setRequired(true))
         .addStringOption(option => option
             .setName('action')
-            .setDescription(i18next.t('staffmanagement-js_action'))
+            .setDescription('Действие (нанять или снять)')
             .setRequired(true)
             .addChoices(
-                { name: i18next.t('staffmanagement-js_hire'), value: 'hire' },
-                { name: i18next.t('staffmanagement-js_fire'), value: 'fire' }
+                { name: ('Повысить'), value: 'hire' },
+                { name: ('Понизить'), value: 'fire' }
             ))
         .addStringOption(option => option
             .setName('role')
@@ -39,8 +39,8 @@ module.exports = {
     async execute(robot, interaction) {
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
-        }
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+          }
         await interaction.deferReply({ ephemeral: true });
 
         try {
@@ -56,28 +56,52 @@ module.exports = {
             const memberToManage = await interaction.guild.members.fetch(userIdToManage);
 
             if (!memberToManage) {
-                return await interaction.editReply({ content: i18next.t('User_not_found'), ephemeral: true });
+                return await interaction.editReply({ content: i18next.t('User _not_found'), ephemeral: true });
             }
 
-            // Получение настроек сервера
-            const serverSettings = await getServerSettings(interaction.guild.id);
-            const { logChannelName } = serverSettings;
+            // Название канала логирования
+            const logChannelName = 'заявки';
             const botMember = interaction.guild.members.me;
-            let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+            let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName && ch.type === ChannelType.GuildText);
 
             // Если канал для логов не найден, создаем его
             if (!logChannel) {
-                const logChannelCreationResult = await createLogChannel(interaction, logChannelName, botMember, interaction.guild.roles.cache);
+                const everyoneRole = interaction.guild.roles.everyone;
 
-                if (logChannelCreationResult.startsWith('Ошибка')) {
-                    return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+                try {
+                    logChannel = await interaction.guild.channels.create({
+                        name: logChannelName,
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            {
+                                id: everyoneRole.id,
+                                deny: [PermissionFlagsBits.ViewChannel], 
+                            },
+                            {
+                                id: botMember.id,
+                                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+                            },
+                        ],
+                    });
+
+                    // Получаем всех пользователей с ролями выше бота и разрешаем им видеть канал
+                    const higherRoles = interaction.guild.roles.cache.filter(role => role.position > botMember.roles.highest.position);
+                    higherRoles.forEach(role => {
+                        logChannel.permissionOverwrites.create(role, {
+                            [PermissionFlagsBits.ViewChannel]: true,
+                            [PermissionFlagsBits.SendMessages]: true,
+                        });
+                    });
+
+                    console.log(`Создан новый лог-канал: ${logChannel.name}`);
+                } catch (error) {
+                    console.error(`Не удалось создать канал логирования: ${error.message}`);
+                    return await interaction.editReply({ content: 'Не удалось создать канал логирования.', ephemeral: true });
                 }
-
-                logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
             }
 
             // Проверяем наличие прав у бота
-            if (!logChannel.permissionsFor(botMember).has('SEND_MESSAGES')) {
+            if (!logChannel.permissionsFor(botMember).has(PermissionFlagsBits.SendMessages)) {
                 return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в лог-канал.', ephemeral: true });
             }
 

@@ -13,18 +13,18 @@ const TIME_OPTION_NAME = t('warn-js_time');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('warn')
-        .setDescription(i18next.t('warn-js_description'))
+        .setDescription('удаление предупреждения пользователя')
         .addUserOption(option => option
             .setName(USER_OPTION_NAME)
-            .setDescription(i18next.t('warn-js_user_description'))
+            .setDescription('ID или упоминание пользователя')
             .setRequired(true))
         .addStringOption(option => option
             .setName(REASON_OPTION_NAME)
-            .setDescription(i18next.t('warn-js_reason_description'))
+            .setDescription('Причина предупреждения')
             .setRequired(false))
         .addStringOption(option => option
             .setName(TIME_OPTION_NAME)
-            .setDescription(i18next.t('warn-js_time_description'))
+            .setDescription('время предупреждения(пример 1d 1h 10m)')
             .setRequired(false)),
     /**
          * @param {Client} robot - экземпляр Discord.js Client
@@ -33,8 +33,8 @@ module.exports = {
     async execute(robot, interaction, database) {
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
-        }
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+          }
         // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
         await interaction.deferReply({ ephemeral: true });
         let hasReplied = false; // Флаг для отслеживания, был ли отправлен ответ

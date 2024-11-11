@@ -12,7 +12,7 @@ function isLogChannelEnabled(actionType, serverSettings) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('test')
-        .setDescription(i18next.t('test-js_description')),
+        .setDescription('Провести тест сервера'),
 
     async execute(robot, interaction) {
         let responseMessage = '';
@@ -20,8 +20,8 @@ module.exports = {
         try {
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply(i18next.t('error_private_messages'));
-            }
+                return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+              }
 
             await interaction.reply({ content: 'loading...', ephemeral: true });
 

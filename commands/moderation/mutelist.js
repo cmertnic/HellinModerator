@@ -6,7 +6,7 @@ const userCommandCooldowns = new Map();
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('mutelist')
-    .setDescription(i18next.t('mutelist-js_description')),
+    .setDescription('Список заглушенных пользователей'),
 
   /**
    * Обработчик команды
@@ -25,7 +25,7 @@ module.exports = {
       // Проверка, что пользователь не бот
       if (interaction.user.bot) return;
       if (interaction.channel.type === ChannelType.DM) {
-          return interaction.editReply(i18next.t('error_private_messages'));
+        return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
       }
 
       // Проверка, что команда не используется в личных сообщениях

@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 // Импортируем необходимые модули
-const { Client, Collection, GatewayIntentBits, Partials, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, Partials, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
@@ -54,19 +54,28 @@ const rest = new REST().setToken(process.env.TOKEN);
   await initializeI18next('eng');
   try {
     // Создаем экземпляр клиента Discord
+    const { Client, GatewayIntentBits, Partials } = require('discord.js');
+
     const robot = new Client({
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.GuildMessageTyping,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildScheduledEvents
       ],
       partials: [
         Partials.Message,
         Partials.Channel,
         Partials.Reaction,
         Partials.User,
-      ],
+        Partials.GuildMember,
+        Partials.GuildScheduledEvent
+      ]
     });
 
     robot.commands = new Collection();
@@ -114,9 +123,6 @@ const rest = new REST().setToken(process.env.TOKEN);
     });
     // Обработка выбора роли
     const selectedRoles = []; // Массив для хранения выбранных ролей
-
-
-
 
     robot.on('ready', async () => {
       console.log(`${robot.user.username} готов вкалывать`);
@@ -192,15 +198,14 @@ const rest = new REST().setToken(process.env.TOKEN);
         if (role) {
           // Выдаем роль пользователю
           await member.roles.add(role);
-          console.log(`Выдана роль "Новичок" пользователю ${member.user.tag}`);
         } else {
           async function ensureRolesExist(interaction) {
             const rolesToCreate = ['Новичок'];
             const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
-        }
+          }
           const roleCreationMessages = await ensureRolesExist(interaction);
           if (roleCreationMessages) {
-              console.log(roleCreationMessages); // Логирование сообщений о создании ролей
+            console.log(roleCreationMessages); // Логирование сообщений о создании ролей
           }
         }
       } catch (error) {
@@ -424,6 +429,39 @@ const rest = new REST().setToken(process.env.TOKEN);
       }
     });
 
+    // Обработчик события voiceStateUpdate для перемещения пользователя
+    const ROOM_NAME = '🎮Рандомная комната';
+    robot.on("voiceStateUpdate", async (oldState, newState) => {
+      try {
+        if (newState.channel && newState.channel.name === ROOM_NAME) {
+
+          // Получаем все голосовые каналы на сервере
+          const allVoiceChannels = newState.guild.channels.cache.filter(channel => channel.type === ChannelType.GuildVoice);
+
+          // Здесь вы можете задать свои критерии для выбора каналов
+          const TARGET_CHANNELS = allVoiceChannels
+            .filter(channel => channel.name.toLowerCase() !== ROOM_NAME) // Исключаем текущую комнату
+            .map(channel => channel.name); // Получаем имена каналов
+
+          if (TARGET_CHANNELS.length > 0) {
+            const randomChannelName = TARGET_CHANNELS[Math.floor(Math.random() * TARGET_CHANNELS.length)];
+            const randomChannel = allVoiceChannels.find(channel => channel.name === randomChannelName);
+            await newState.member.voice.setChannel(randomChannel);
+          } else {
+            console.log("Нет доступных голосовых каналов для перемещения.");
+          }
+        } else if (newState.channel === null) {
+        } else {
+        }
+      } catch (err) {
+        console.error(`Ошибка при обработке состояния голоса пользователя ${newState.member ? newState.member.user.tag : 'неизвестного'}:`, err);
+        if (newState.member) {
+          await newState.member.send('Произошла ошибка при перемещении.');
+        }
+      }
+    });
+
+
 
     function setupCronJobs() {
       cron.schedule('*/2 * * * *', async () => {
@@ -449,6 +487,7 @@ const rest = new REST().setToken(process.env.TOKEN);
         }
       });
     }
+
 
     setupCronJobs();
     robot.login(process.env.TOKEN);

@@ -1,128 +1,194 @@
-// Подключаем необходимые модули
-const { Client, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, Events } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { i18next, t } = require('../../i18n');
+const { i18next } = require('../../i18n');
 const userCommandCooldowns = new Map();
-// Экспортируем объект с данными и исполнением команды
+const { createLogChannel } = require('../../events');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('help')
-        .setDescription(i18next.t('help-js_description')),
+        .setDescription('Помощь')
+        .addStringOption(option =>
+            option.setName('question')
+                .setDescription('Введите ваш вопрос')
+                .setRequired(true)),
 
-    /**
-     * @param {Client} robot - экземпляр клиента Discord.js
-     * @param {CommandInteraction} interaction - объект interaction от Discord.js
-     */
     async execute(robot, interaction) {
-        // Проверка, что пользователь не бот
         if (interaction.user.bot) return;
+        if (interaction.channel.type === ChannelType.DM) {
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+        }
+        const question = interaction.options.getString('question');
 
         const commandCooldown = userCommandCooldowns.get(interaction.user.id);
         if (commandCooldown && commandCooldown.command === 'help' && Date.now() < commandCooldown.endsAt) {
-          const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
-          return interaction.reply({ content: (i18next.t(`cooldown`, { timeLeft: timeLeft})), ephemeral: true });
+            const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
+            return interaction.reply({ content: (i18next.t(`cooldown`, { timeLeft: timeLeft })), ephemeral: true });
         }
-        // Создаем embed для главной страницы помощи
-        const mainEmbed = new EmbedBuilder()
-            .setColor('White')
-            .setTitle(i18next.t('help-js_main_page_title'))
-            .setDescription(i18next.t('help-js_main_page_description'))
-            .addFields(
-                { name: i18next.t('help-js_main_page_name_1'), value: i18next.t('help-js_main_page_value_1') },
-                { name: i18next.t('help-js_main_page_name_2'), value: i18next.t('help-js_main_page_value_2') },
-                { name: i18next.t('help-js_main_page_name_3'), value: i18next.t('help-js_main_page_value_3') }
-            );
 
-        // Создаем embed для страницы команд общиго назначения
-        const communityEmbed = new EmbedBuilder()
-            .setColor('Green')
-            .setTitle(i18next.t('help-js_General_commands_page_title'))
-            .addFields(
-                { name: i18next.t(`help-js_General_commands_page_name_1`), value: i18next.t(`help-js_General_commands_page_value_1`) },
-                { name: i18next.t(`help-js_General_commands_page_name_2`), value: i18next.t(`help-js_General_commands_page_value_2`) }
-            );
+        const helpChannelName = "help";
+        const botMember = interaction.guild.members.me;
+        let helpChannel = interaction.guild.channels.cache.find(ch => ch.name === helpChannelName);
 
-        // Создаем embed для страницы команд модераторов
-        const moderationEmbed = new EmbedBuilder()
-            .setColor('Blue')
-            .setTitle(i18next.t('help-js_Commands_for_moderators_page_title'))
-            .addFields([
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_1`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_1`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_2`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_2`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_3`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_3`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_4`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_4`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_5`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_5`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_6`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_6`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_7`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_7`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_8`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_8`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_9`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_9`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_10`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_10`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_11`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_11`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_12`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_12`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_13`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_13`)) },
-                { name: (i18next.t(`help-js_Commands_for_moderators_page_name_14`)), value: (i18next.t(`help-js_Commands_for_moderators_page_value_14`)) }
-            ]);
+        if (!helpChannel) {
+            const logChannelCreationResult = await createLogChannel(interaction, helpChannelName, botMember, interaction.guild.roles.cache);
 
-        // Создаем embed для страницы дополнительных команд
-        const extraPageEmbed = new EmbedBuilder()
-            .setColor('Yellow')
-            .setTitle(i18next.t('help-js_extra_page_title'))
-            .addFields([
-                { name: (i18next.t(`help-js_extra_page_name_1`)), value: (i18next.t(`help-js_extra_page_value_1`)) },
-                { name: (i18next.t(`help-js_extra_page_name_2`)), value: (i18next.t(`help-js_extra_page_value_2`)) },
-                { name: (i18next.t(`help-js_extra_page_name_3`)), value: (i18next.t(`help-js_extra_page_value_3`)) },
-                { name: (i18next.t(`help-js_extra_page_name_4`)), value: (i18next.t(`help-js_extra_page_value_4`)) },
-            ]);
+            if (logChannelCreationResult.startsWith('Ошибка')) {
+                return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+            }
 
-        // Создаем кнопки для пагинации
-        const row = new ActionRowBuilder()
-            .addComponents([
-                new ButtonBuilder()
-                    .setCustomId('community')
-                    .setLabel('👩‍👧‍👧')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('moderation')
-                    .setLabel('🛡️')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('extra')
-                    .setLabel('📒')
-                    .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                    .setCustomId('rollback')
-                    .setLabel('🏠')
-                    .setStyle(ButtonStyle.Danger)
-            ]);
-
-        // Отправляем главное embed с кнопками
-        await interaction.reply({ embeds: [mainEmbed], components: [row], ephemeral: true });
-
-        // Обработчик нажатий на кнопки
-        const filter = (i) => i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000 });
-
-        async function rollback(i) {
-            await i.update({ embeds: [mainEmbed], components: [row] });
+            helpChannel = interaction.guild.channels.cache.find(ch => ch.name === helpChannelName);
         }
+
+        // Создаем вложение для сообщения
+        const questionEmbed = new EmbedBuilder()
+            .setColor(0x00FF00) // Установить цвет вложения
+            .setTitle('Вопрос от ' + interaction.user.username) // Заголовок вложения
+            .setDescription(question) // Описание
+            .setTimestamp(); // Время для вложения
+
+        const helpMessage = await helpChannel.send({ embeds: [questionEmbed] });
+
+        // Создаем выпадающее меню для ответов
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`responseSelect_${helpMessage.id}`)
+            .setPlaceholder('Выберите ответ или введите свой')
+            .addOptions([
+                {
+                    label: 'Ответ 1',
+                    value: 'response_1',
+                },
+                {
+                    label: 'Ответ 2',
+                    value: 'response_2',
+                },
+                {
+                    label: 'Другой ответ',
+                    value: 'custom_response',
+                },
+            ]);
+
+        const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+        await helpMessage.edit({ components: [selectRow] });
+
         userCommandCooldowns.set(interaction.user.id, { command: 'help', endsAt: Date.now() + 300200 });
-        collector.on('collect', async (i) => {
-            if (i.customId === 'community') {
-                await i.update({ embeds: [communityEmbed], components: [row] });
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } else if (i.customId === 'moderation') {
-                await i.update({ embeds: [moderationEmbed], components: [row] });
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } else if (i.customId === 'extra') {
-                await i.update({ embeds: [extraPageEmbed], components: [row] });
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } else if (i.customId === 'rollback') {
-                await rollback(i);
+        await interaction.reply({ content: 'Ваш вопрос был отправлен!', ephemeral: true });
+
+        // Регистрация обработчика для взаимодействия с выпадающим меню
+        robot.on(Events.InteractionCreate, async (selectInteraction) => {
+            if (selectInteraction.isStringSelectMenu() && selectInteraction.customId.startsWith('responseSelect_')) {
+                await handleSelectInteraction(helpChannel, selectInteraction, interaction.user, question);
             }
         });
-        setTimeout(() => {
-            userCommandCooldowns.delete(interaction.user.id);
-          }, 300200);
     }
-    
 };
+
+// Отдельная функция для обработки выбора из выпадающего меню
+async function handleSelectInteraction(helpChannel, selectInteraction, questionUser, questionContent) {
+    const selectedValue = selectInteraction.values[0];
+
+    // Закрываем выпадающее меню
+    const selectRow = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(`responseSelect_${selectInteraction.message.id}`)
+            .setDisabled(true) // Делаем меню недоступным
+            .setPlaceholder('Вы уже выбрали ответ')
+            .addOptions([
+                {
+                    label: 'Ответ 1',
+                    value: 'response_1',
+                },
+                {
+                    label: 'Ответ 2',
+                    value: 'response_2',
+                },
+                {
+                    label: 'Другой ответ',
+                    value: 'custom_response',
+                },
+            ]) // Добавляем опции обратно
+    );
+
+    await selectInteraction.message.edit({ components: [selectRow] });
+
+    const currentTime = new Date().toLocaleString(); // Получаем текущее время
+
+    if (selectedValue === 'custom_response') {
+        const responsePrompt = 'Пожалуйста, введите свой ответ в чате.';
+        await selectInteraction.reply({ content: responsePrompt, ephemeral: true });
+
+        const filter = msg => msg.author.id === questionUser.id && !msg.author.bot;
+        const collector = selectInteraction.channel.createMessageCollector({ filter, max: 1, time: 60000 }); // Слушаем 60 секунд
+
+        collector.on('collect', async (msg) => {
+            try {
+                const responseEmbed = new EmbedBuilder()
+                    .setColor(0x0000FF)
+                    .setTitle('Ответ от ' + `${selectInteraction.user.tag}`)
+                    .setDescription(msg.content)
+                    .addFields({ name: 'Ваш вопрос:', value: questionContent })
+                    .setTimestamp();
+
+                await questionUser.send({ embeds: [responseEmbed] });
+                await selectInteraction.followUp({ content: `Ваш ответ был отправлен <@${selectInteraction.user.id}>.`, ephemeral: true });
+
+                // Устанавливаем напоминание
+                const reminderTime = 3600000; // Время напоминания в миллисекундах (1 час)
+                setTimeout(async () => {
+                    try {
+                        await questionUser.send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
+                    } catch (error) {
+                        console.error(`Не удалось отправить напоминание пользователю ${questionUser.tag}: ${error.message}`);
+                    }
+                }, reminderTime);
+
+                await selectInteraction.message.delete();
+                await msg.delete();
+            } catch (error) {
+                console.error(`Не удалось отправить личное сообщение пользователю ${questionUser.tag}: ${error.message}`);
+                await selectInteraction.followUp({ content: 'Не удалось отправить вам личное сообщение. Проверьте настройки конфиденциальности.', ephemeral: true });
+            }
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) {
+                selectInteraction.followUp({ content: 'Вы не ввели ответ вовремя.', ephemeral: true });
+            }
+        });
+
+        return; // Завершаем функцию, чтобы не продолжать обработку
+    } else {
+        const response = `Вы выбрали: ${selectedValue === 'response_1' ? 'Ответ 1' : 'Ответ 2'}`;
+
+        const responseEmbed = new EmbedBuilder()
+            .setColor(0x0000FF)
+            .setTitle(`Ответ от ${selectInteraction.user.tag}`)
+            .setDescription(response)
+            .addFields({ name: 'Ваш вопрос:', value: questionContent })
+            .setTimestamp();
+
+        await helpChannel.messages.delete(selectInteraction.message.id).catch(console.error);
+
+        try {
+            await questionUser.send({ embeds: [responseEmbed] });
+            await selectInteraction.followUp({ content: `Вам был отправлен ответ от <@${selectInteraction.user.id}>.`, ephemeral: true });
+
+            // Устанавливаем напоминание
+            const reminderTime = 3600000; // Время напоминания в миллисекундах (1 час)
+            setTimeout(async () => {
+                try {
+                    await questionUser.send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
+                } catch (error) {
+                    console.error(`Не удалось отправить напоминание пользователю ${questionUser.tag}: ${error.message}`);
+                }
+            }, reminderTime);
+
+            await selectInteraction.message.delete();
+        } catch (error) {
+            console.error(`Не удалось отправить личное сообщение пользователю ${questionUser.tag}: ${error.message}`);
+            await selectInteraction.reply({ content: 'Не удалось отправить вам личное сообщение. Проверьте настройки конфиденциальности.', ephemeral: true });
+            return;
+        }
+    }
+}
+

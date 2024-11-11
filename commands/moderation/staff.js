@@ -5,14 +5,14 @@ const { i18next, t } = require('../../i18n');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staff')
-        .setDescription(i18next.t('mutelist-js_description')),
+        .setDescription('Создание окна найма'),
 
     async execute(robot, interaction) {       
         // Проверки и инициализация переменных
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
-        }
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+          }
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             interaction.reply({ content: i18next.t('Admin_user_check'), ephemeral: true });
             return;

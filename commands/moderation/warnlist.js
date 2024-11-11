@@ -7,7 +7,7 @@ const userCommandCooldowns = new Map();
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('warnlist')
-        .setDescription(i18next.t('warnlist-js_description')),
+        .setDescription('Список активных жалоб'),
 
     /**
          * @param {Client} robot - экземпляр Discord.js Client
@@ -16,8 +16,8 @@ module.exports = {
     async execute(robot, interaction) {
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply(i18next.t('error_private_messages'));
-            }
+                return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+              }
         const commandCooldown = userCommandCooldowns.get(interaction.user.id);
         if (commandCooldown && commandCooldown.command === 'warnlist' && Date.now() < commandCooldown.endsAt) {
           const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
@@ -27,12 +27,6 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
         try {
             // Проверка, является ли пользователь ботом
-
-
-            // Проверка, является ли канал частным сообщением
-            if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply({ content: i18next.t('error_private_messages'), ephemeral: true });
-            }
 
             const { member, guild } = interaction;
 

@@ -9,15 +9,15 @@ const userCommandCooldowns = new Map();
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('report')
-        .setDescription(i18next.t('report-js_description'))
+        .setDescription(i18next.t('жалоба на пользователя'))
         .addUserOption(option =>
             option.setName(USER_OPTION_NAME)
-                .setDescription(i18next.t('report-js_user_description'))
+                .setDescription(i18next.t('ID или упоминание пользователя'))
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName(REASON_OPTION_NAME)
-                .setDescription(i18next.t('report-js_reason_description'))
+                .setDescription(i18next.t('причина жалобы'))
                 .setRequired(false)
         ),
 
@@ -29,8 +29,8 @@ module.exports = {
     async execute(robot, interaction) {
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
-        }
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+          }
         const commandCooldown = userCommandCooldowns.get(interaction.user.id);
         if (commandCooldown && commandCooldown.command === 'report' && Date.now() < commandCooldown.endsAt) {
           const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
@@ -39,11 +39,6 @@ module.exports = {
         // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
         await interaction.deferReply({ ephemeral: true });
         try {
-
-            // Проверка, что команда не была вызвана в личных сообщениях
-            if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply(i18next.t('error_private_messages'));
-            }
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);

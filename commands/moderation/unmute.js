@@ -10,15 +10,15 @@ const REASON_OPTION_NAME = i18next.t('unmute-js_reason');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('unmute')
-        .setDescription(i18next.t('unmute-js_description'))
+        .setDescription('Разглушить пользователя')
         .addUserOption(option =>
             option.setName(USER_OPTION_NAME)
-                .setDescription(i18next.t('unmute-js_user_description'))
+                .setDescription('ID или упоминание пользователя')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName(REASON_OPTION_NAME)
-                .setDescription(i18next.t('unmute-js_reason_description'))
+                .setDescription('Причина разглушения')
                 .setRequired(false)
         ),
 
@@ -34,8 +34,8 @@ module.exports = {
             // Предварительные проверки
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
-                return interaction.editReply(i18next.t('error_private_messages'));
-            }
+                return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+              }
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);

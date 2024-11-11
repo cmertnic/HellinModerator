@@ -9,15 +9,15 @@
     module.exports = {
         data: new SlashCommandBuilder()
             .setName('kick')
-            .setDescription(i18next.t('kick-js_description'))
+            .setDescription('Исключить пользователя с сервера')
             .addUserOption(option =>
                 option.setName(USER_OPTION_NAME)
-                    .setDescription(i18next.t('kick-js_user_description'))
+                    .setDescription('Пользователь для исключения')
                     .setRequired(true)
             )
             .addStringOption(option =>
                 option.setName(REASON_OPTION_NAME)
-                    .setDescription(i18next.t('kick-js_reason_description'))
+                    .setDescription('Причина исключения')
                     .setRequired(false)
             ),
         /**
@@ -32,8 +32,8 @@
                 // Проверка, что пользователь не бот и сообщение не находится в личных сообщениях
                 if (interaction.user.bot) return;
                 if (interaction.channel.type === ChannelType.DM) {
-                    return interaction.editReply(i18next.t('error_private_messages'));
-                }
+                    return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+                  }
 
                 // Разбор аргументов команды
                 const userId = interaction.options.getUser(USER_OPTION_NAME).id;

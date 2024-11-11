@@ -12,10 +12,10 @@ const isClearing = {};
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clear')
-        .setDescription(i18next.t('clear-js_description'))
+        .setDescription('Очистить канал')
         .addStringOption(option =>
             option.setName(AMOUNT_OPTION_NAME)
-                .setDescription(i18next.t('clear-js_amount_description'))
+                .setDescription('Количество удалённых сообщений')
                 .setRequired(true)),
     /**
      * Выполнение команды
@@ -29,8 +29,8 @@ module.exports = {
         // Предварительные проверки
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
-            return interaction.editReply(i18next.t('error_private_messages'));
-        }
+            return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+          }
         // Проверка прав пользователя
         const member = interaction.member;
         if (member && !member.permissions.has('ModerateMembers')) {

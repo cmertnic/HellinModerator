@@ -14,23 +14,23 @@ module.exports = {
   // Определяем данные команды с помощью SlashCommandBuilder
   data: new SlashCommandBuilder()
     .setName('ban')
-    .setDescription(i18next.t('ban-js_description'))
-    .addUserOption(option => option.setName(USER_OPTION_NAME).setDescription(i18next.t('ban-js_user_description')).setRequired(true))
-    .addStringOption(option => option.setName(DEL_MESS_TIME_OPTION_NAME).setDescription(i18next.t('ban-js_del_mess_time_description')).setRequired(true).addChoices(
-      { name: i18next.t('ban-js_delete_mess_time_choise_0'), value: '0' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_1'), value: '1h' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_2'), value: '6h' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_3'), value: '12h' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_4'), value: '1d' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_5'), value: '3d' },
-      { name: i18next.t('ban-js_delete_mess_time_choise_6'), value: '7d' }
+    .setDescription('Забанить пользователя')
+    .addUserOption(option => option.setName(USER_OPTION_NAME).setDescription('Пользователь').setRequired(true))
+    .addStringOption(option => option.setName(DEL_MESS_TIME_OPTION_NAME).setDescription(i18next.t('время для удаления сообщений пользователя')).setRequired(true).addChoices(
+      { name: ('Ничего'), value: '0' },
+      { name: ('За полседний час'), value: '1h' },
+      { name: ('За полседние 6 часов'), value: '6h' },
+      { name: ('За полседние 12 часов'), value: '12h' },
+      { name: ('За полседний день'), value: '1d' },
+      { name: ('За полседние 3 дня'), value: '3d' },
+      { name: ('За полседние 7 дней'), value: '7d' }
     ))
-    .addStringOption(option => option.setName(REASON_OPTION_NAME).setDescription(i18next.t('ban-js_reason_description')).setRequired(false)),
+    .addStringOption(option => option.setName(REASON_OPTION_NAME).setDescription('причина бана').setRequired(false)),
 
   async execute(robot, interaction) {
     if (interaction.user.bot) return;
     if (interaction.channel.type === ChannelType.DM) {
-      return interaction.editReply(i18next.t('error_private_messages'));
+      return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
     }
     
     async function ensureRolesExist(interaction) {
