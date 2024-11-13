@@ -284,6 +284,7 @@
     "unban-js_unban_user_log_moderator": "- пользователь <@{{userId}}> был успешно разблокирован по причине: {{reason}}.",
     "unmute-js_description": "размутить пользователя",
     "unmute-js_user": "пользователь",
+    "unmute-js_checks_failed": "у пользователя нету мута",
     "unmute-js_user_description": "ID или упоминание пользователя",
     "unmute-js_reason": "причина",
     "unmute-js_reason_description": "причина размута",

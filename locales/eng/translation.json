@@ -284,6 +284,7 @@
     "unban-js_unban_user_log_moderator": "- user <@{{userId}}> was successfully unmuted for reason: {{reason}}.",
     "unmute-js_description": "unmute user",
     "unmute-js_user": "user",
+    "unmute-js_checks_failed": "user is not muted",
     "unmute-js_user_description": "user ID or mention",
     "unmute-js_reason": "reason",
     "unmute-js_reason_description": "reason for unmute",
