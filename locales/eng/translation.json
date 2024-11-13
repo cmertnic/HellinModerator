@@ -283,6 +283,7 @@
     "unban-js_unban_user_footer": "- command executed by: {{moderator}}.",
     "unban-js_unban_user_log_moderator": "- user <@{{userId}}> was successfully unmuted for reason: {{reason}}.",
     "unmute-js_description": "unmute user",
+    "language-js_select_language_prompt": "select language",
     "unmute-js_user": "user",
     "unmute-js_checks_failed": "user is not muted",
     "unmute-js_user_description": "user ID or mention",
