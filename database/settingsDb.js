@@ -187,7 +187,7 @@ async function initializeDefaultServerSettings(guildId) {
         eventRoleName: process.env.EVENTROLENAME || 'Ивентер', 
         controlRoleName: process.env.CONTROLROLENAME || 'Контрол', 
         creativeRoleName: process.env.CREATIVEROLENAME || 'Креатив', 
-        weddingsLogChannelName: process.env.RANDOM_ROOM_NAME || '🖤свадьба',
+        weddingsLogChannelName: process.env.WEDDINGS_LOGCHANNELNAME || '🖤свадьба',
         weddingsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true
        
       };
