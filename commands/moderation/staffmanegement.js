@@ -4,15 +4,17 @@ const { getServerSettings } = require('../../database/settingsDb');
 const { createRoles } = require('../../events');
 
 async function ensureRolesExist(interaction) {
-    const rolesToCreate = ['Саппорт', 'Ведущий', 'Модератор', 'Ивентер', 'Контрол', 'Креатив'];
-    const rolesCreationMessages = await createRoles(interaction, rolesToCreate); 
+    const serverSettings = await getServerSettings(interaction.guild.id);
+    const { supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, } = serverSettings;
+    const rolesToCreate = [supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,];
+    const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staffmanagement')
         .setDescription('Управление ролями сотрудников')
-        .addUserOption (option => option
+        .addUserOption(option => option
             .setName('user')
             .setDescription('Пользователь, которому нужно назначить или снять роль')
             .setRequired(true))
@@ -40,7 +42,7 @@ module.exports = {
         if (interaction.user.bot) return;
         if (interaction.channel.type === ChannelType.DM) {
             return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
-          }
+        }
         await interaction.deferReply({ ephemeral: true });
 
         try {
@@ -50,7 +52,7 @@ module.exports = {
                 console.log(roleCreationMessages); // Логирование сообщений о создании ролей
             }
 
-            const userIdToManage = interaction.options.getUser ('user').id;
+            const userIdToManage = interaction.options.getUser('user').id;
             const action = interaction.options.getString('action');
             const roleToManage = interaction.options.getString('role');
             const memberToManage = await interaction.guild.members.fetch(userIdToManage);
@@ -58,11 +60,28 @@ module.exports = {
             if (!memberToManage) {
                 return await interaction.editReply({ content: i18next.t('User _not_found'), ephemeral: true });
             }
+            const serverSettings = await getServerSettings(interaction.guild.id);
+            const { supportRoleName, logChannelName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse } = serverSettings;
 
+            // Получение канала для логирования
+            let logChannel;
+            if (applicationsLogChannelNameUse) {
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === applicationsLogChannelName);
+            } else {
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+            }
+
+            // Проверка наличия канала для логирования
+            if (!logChannel) {
+                const channelNameToCreate = applicationsLogChannelNameUse ? applicationsLogChannelName : logChannelName;
+                const roles = interaction.guild.roles.cache;
+                const botMember = interaction.guild.members.me;
+                const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+                await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+            }
             // Название канала логирования
-            const logChannelName = 'заявки';
             const botMember = interaction.guild.members.me;
-            let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName && ch.type === ChannelType.GuildText);
 
             // Если канал для логов не найден, создаем его
             if (!logChannel) {
@@ -75,7 +94,7 @@ module.exports = {
                         permissionOverwrites: [
                             {
                                 id: everyoneRole.id,
-                                deny: [PermissionFlagsBits.ViewChannel], 
+                                deny: [PermissionFlagsBits.ViewChannel],
                             },
                             {
                                 id: botMember.id,
@@ -109,22 +128,22 @@ module.exports = {
             let role;
             switch (roleToManage) {
                 case 'support':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Саппорт');
+                    role = interaction.guild.roles.cache.find(role => role.name === supportRoleName);
                     break;
                 case 'leader':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Ведущий');
+                    role = interaction.guild.roles.cache.find(role => role.name === podkastRoleName);
                     break;
                 case 'moderator':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Модератор');
+                    role = interaction.guild.roles.cache.find(role => role.name === moderatorRoleName);
                     break;
                 case 'eventer':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Ивентер');
+                    role = interaction.guild.roles.cache.find(role => role.name === eventRoleName);
                     break;
                 case 'control':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Контрол');
+                    role = interaction.guild.roles.cache.find(role => role.name === controlRoleName);
                     break;
                 case 'creative':
-                    role = interaction.guild.roles.cache.find(role => role.name === 'Креатив');
+                    role = interaction.guild.roles.cache.find(role => role.name === creativeRoleName);
                     break;
                 default:
                     return await interaction.editReply({ content: 'Роль не найдена.', ephemeral: true });

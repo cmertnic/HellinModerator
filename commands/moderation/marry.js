@@ -6,7 +6,9 @@ const userCommandCooldowns = new Map(); // Карта для отслежива�
 
 // Функция для проверки существования необходимых ролей на сервере
 async function ensureRolesExist(interaction) {
-    const rolesToCreate = ['💞']; // Определяем роли для создания
+    const serverSettings = await getServerSettings(interaction.guild.id);
+        const {loversRoleName} = serverSettings;
+    const rolesToCreate = [loversRoleName]; // Определяем роли для создания
     await createRoles(interaction, rolesToCreate); // Вызываем функцию для создания ролей
 }
 
@@ -34,7 +36,8 @@ module.exports = {
         if (interaction.replied || interaction.deferred) {
             return; 
         }
-
+        const serverSettings = await getServerSettings(interaction.guild.id);
+        const {loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse,logChannelName } = serverSettings;
         // Отложить ответ, чтобы подтвердить обработку команды
         await interaction.deferReply({ ephemeral: true });
 
@@ -56,7 +59,7 @@ module.exports = {
         }
 
         // Найти роль "женат" в гильдии
-        const marriedRole = interaction.guild.roles.cache.find(role => role.name === '💞');
+        const marriedRole = interaction.guild.roles.cache.find(role => role.name === loversRoleName);
 
         let proposerMember;
         let receiverMember;
@@ -104,55 +107,30 @@ module.exports = {
             .setTimestamp(); // Время для вложения
 
         const botMember = interaction.guild.members.me; // Получить участника бота
-        const logChannelName = '🖤свадьба'; // Определить имя лог-канала
-        let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName); // Проверить, существует ли лог-канал
 
-        // Создать лог-канал, если он не существует
-        if (!logChannel) {
-            const logChannelCreationResult = await createLogChannel(interaction, logChannelName, botMember, interaction.guild.roles.cache);
+       // Получение канала для логирования
+       let logChannel;
+       if (weddingsLogChannelNameUse) {
+           logChannel = interaction.guild.channels.cache.find(ch => ch.name === weddingsLogChannelName);
+       } else {
+           logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+       }
 
-            // Обработать ошибки при создании лог-канала
-            if (logChannelCreationResult.startsWith('Ошибка')) {
-                return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
-            }
-
-            logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName); // Повторно получить лог-канал
-        }
-
-        // Получить все каналы и проверить существование лог-канала
-        const fetchedChannels = await interaction.guild.channels.fetch();
-        const existingChannel = fetchedChannels.find(c => c.name === logChannelName && c.type === ChannelType.GuildText);
-
-        // Создать лог-канал, если он не существует
-        if (!existingChannel) {
-            const everyoneRole = interaction.guild.roles.everyone;
-
-            try {
-                await interaction.guild.channels.create({
-                    name: logChannelName,
-                    type: ChannelType.GuildText,
-                    permissionOverwrites: [
-                        {
-                            id: everyoneRole.id,
-                            deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] // Запретить права для всех
-                        },
-                        {
-                            id: botMember.id,
-                            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] // Разрешить права для бота
-                        }
-                    ],
-                    reason: i18next.t('events-js_logChannel_reason') // Причина создания канала
-                });
-            } catch (error) {
-                console.error(`Ошибка при создании канала: ${error}`); // Лог ошибки
-            }
-        }
+       // Проверка наличия канала для логирования
+       if (!logChannel) {
+           const channelNameToCreate = weddingsLogChannelNameUse ? weddingsLogChannelName : logChannelName;
+           const roles = interaction.guild.roles.cache;
+           const botMember = interaction.guild.members.me;
+           const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+           await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
+           logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+       }
 
         // Отправить сообщение с предложением пользователю
         const proposalMessage = await userToMarry.send({ embeds: [marryEmbed], components: [row] }).catch(async err => {
             // Если отправка ЛС не удалась, залогировать сообщение в лог-канале
-            if (existingChannel) {
-                await existingChannel.send({ embeds: [marryEmbed] });
+            if (logChannel) {
+                await logChannel.send({ embeds: [marryEmbed] });
             }
 
             return await interaction.editReply({ content: i18next.t('marry-js_user_dm_error'), ephemeral: true });
@@ -184,7 +162,7 @@ module.exports = {
                     .setTimestamp(); // Время для вложения
                 
                 // Залогировать принятие в лог-канале
-                if (existingChannel) {
+                if (logChannel) {
                     await existingChannel.send({ embeds: [responseEmbed] });
                 }
 
@@ -210,7 +188,7 @@ module.exports = {
                     await interaction.user.send({ embeds: [responseEmbed] });
                 } catch (error) {
                     // Залогировать отклонение в лог-канале, если ЛС не удалось
-                    if (existingChannel) {
+                    if (logChannel) {
                         await existingChannel.send({ embeds: [responseEmbed] });
                     }
                 }

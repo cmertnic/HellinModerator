@@ -32,11 +32,6 @@ module.exports = {
     if (interaction.channel.type === ChannelType.DM) {
       return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
     }
-    
-    async function ensureRolesExist(interaction) {
-      const rolesToCreate = ['Ban'];
-      const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
-    }
 
     // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
     await interaction.deferReply({ ephemeral: true });
@@ -55,9 +50,9 @@ module.exports = {
       const deleteMessagesTime = interaction.options.getString(DEL_MESS_TIME_OPTION_NAME);
 
       // Проверяем права на выдачу ролей
-      const serverSettings = await getServerSettings(guild.id);
-      const banLogChannelName = serverSettings.banLogName;
-      const banLogChannelNameUse = serverSettings.banLogChannelNameUse;
+      const serverSettings = await getServerSettings(interaction.guild.id);
+      const {banRoleName, logChannelName,banLogChannelName, banLogChannelNameUse } = serverSettings;
+
       const moderator = interaction.user;
       const botMember = guild.members.cache.get(robot.user.id);
       
@@ -69,12 +64,9 @@ module.exports = {
       }
 
       // Проверяем, есть ли роль "ban"
-      let banRole = guild.roles.cache.find(role => role.name === 'Ban');
+      const banRole = interaction.guild.roles.cache.find(role => role.name === banRoleName);
       if (!banRole) {
-        const roleCreationMessages = await ensureRolesExist(interaction);
-        if (roleCreationMessages) {
-          console.log(roleCreationMessages); // Логирование сообщений о создании ролей
-        }
+          await createRoles(interaction, [banRoleName]);
       }
       const url = 'https://forms.gle/vrihPf3gUJqEdciL9';
       // Выдаем роль пользователю
@@ -91,7 +83,7 @@ module.exports = {
       await user.send({ embeds: [banEmbed] }).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));
       await user.send(url).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));
       // Находим канал логирования
-      const logChannelName = (await getServerSettings(guild.id)).logChannelName;
+
       let logChannel;
       if (banLogChannelNameUse) {
         logChannel = guild.channels.cache?.find(ch => ch.name === banLogChannelName);

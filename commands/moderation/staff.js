@@ -1,7 +1,7 @@
-const { Client, GatewayIntentBits,PermissionsBitField, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, ActionRowBuilder, Events, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder } = require('discord.js');
+const { PermissionsBitField, ChannelType, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { i18next, t } = require('../../i18n');
-
+const { getServerSettings } = require('../../database/settingsDb');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('staff')
@@ -17,6 +17,8 @@ module.exports = {
             interaction.reply({ content: i18next.t('Admin_user_check'), ephemeral: true });
             return;
         }
+        const serverSettings = await getServerSettings(interaction.guild.id);
+        const { supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, } = serverSettings;
         const embed = new EmbedBuilder()
             .setColor('#696969') // Цвет рамки
             .setTitle('Проходит набор в команду сервера!')
@@ -29,22 +31,22 @@ module.exports = {
             .setPlaceholder('Выберите роль')
             .addOptions(
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Саппорт')
+                    .setLabel(supportRoleName)
                     .setValue('role1'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Контрол')
+                    .setLabel(controlRoleName)
                     .setValue('role2'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Ивентёр')
+                    .setLabel(eventRoleName)
                     .setValue('role3'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Модератор')
+                    .setLabel(moderatorRoleName)
                     .setValue('role4'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Ведущий')
+                    .setLabel(podkastRoleName)
                     .setValue('role5'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel('Креатив')
+                    .setLabel(creativeRoleName)
                     .setValue('role6'),
             );
 

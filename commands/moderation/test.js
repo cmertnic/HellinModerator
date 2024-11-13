@@ -1,8 +1,8 @@
 // Импорт необходимых модулей и функций
-const { Client, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { createMainLogChannel, createLogChannel, createMutedRole,createRoles } = require('../../events');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getServerSettings, saveServerSettings } = require('../../database/settingsDb');
+const { getServerSettings } = require('../../database/settingsDb');
 const { i18next, t } = require('../../i18n');
 
 function isLogChannelEnabled(actionType, serverSettings) {
@@ -33,6 +33,8 @@ module.exports = {
             }
 
             const serverSettings = await getServerSettings(interaction.guild.id);
+            const {manrolename, girlrolename,newmemberrolename, banRoleName,supportRoleName, 
+                podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, } = serverSettings;
             const botMember = await interaction.guild.members.fetch(interaction.client.user.id);
             if (!botMember) {
                 responseMessage += `❌ ${i18next.t('error_bot_member')}\n`;
@@ -61,7 +63,7 @@ module.exports = {
             responseMessage += `✅ ${mainLogChannelMessage}\n`;
 
             // Создание побочных каналов логирования
-            const logChannels = ['ban', 'clear', 'mute', 'kick', 'warn', 'report'];
+            const logChannels = ['ban', 'clear', 'mute', 'kick', 'warn', 'report','help'];
             for (const actionType of logChannels) {
                 if (isLogChannelEnabled(actionType, serverSettings)) {
                     const channelName = serverSettings[actionType + 'LogChannelName'];
@@ -74,10 +76,10 @@ module.exports = {
 
             // Создание роли для замьюченых пользователей
             const mutedRoleMessage = await createMutedRole(interaction, serverSettings);
-            responseMessage += `✅ ${mutedRoleMessage}\n`;
+            responseMessage += ` ${mutedRoleMessage}\n`;
 
             // Создание ролей для мужчин и женщин
-            const rolesToCreate = ['♂', '♀'];
+            const rolesToCreate = [manrolename, girlrolename,newmemberrolename,banRoleName,supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,];
             const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
             responseMessage += `${rolesCreationMessages}\n`;
 

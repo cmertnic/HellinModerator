@@ -56,12 +56,31 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
     automodBlacklist TEXT,
     automodBadLinks TEXT,
     uniteautomodblacklists BOOLEAN,
-    uniteAutomodBadLinks BOOLEAN
+    uniteAutomodBadLinks BOOLEAN,
+    helpLogChannelName TEXT,
+    helpLogChannelNameUse BOOLEAN,
+    manRoleName TEXT,
+    girlRoleName TEXT,
+    newMemberRoleName TEXT,
+    banRoleName TEXT,
+    supportRoleName TEXT,
+    podkastRoleName TEXT,
+    moderatorRoleName TEXT,
+    eventRoleName TEXT,
+    controlRoleName TEXT,
+    creativeRoleName TEXT,
+    applicationsLogChannelName TEXT,
+    applicationsLogChannelNameUse BOOLEAN,
+    randomRoomName TEXT,  
+    loversRoleName TEXT,  
+    weddingsLogChannelName TEXT,  
+    weddingsLogChannelNameUse BOOLEAN  
+
 );`, (err) => {
-    if (err) {
-        console.error(`Ошибка при создании таблицы server_settings: ${err.message}`);
-        process.exit(1);
-    }
+  if (err) {
+    console.error(`Ошибка при создании таблицы server_settings: ${err.message}`);
+    process.exit(1);
+  }
 });
 
 // Функция для сохранения настроек сервера в базе данных
@@ -70,21 +89,28 @@ function saveServerSettings(guildId, settings) {
     const {
       guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice, warningLogChannelName, warningLogChannelNameUse, warningDuration,
       maxWarnings, warningsNotice, banLogChannelName, banLogChannelNameUse, deletingMessagesFromBannedUsers, kickLogChannelName, kickLogChannelNameUse,
-      reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language, automod,NotAutomodChannels, automodBlacklist,
-      automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks
+      reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language, automod, NotAutomodChannels, automodBlacklist,
+      automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName, helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName,
+      supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse,
+      randomRoomName, loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse
     } = settings;
 
     db.run(`REPLACE INTO server_settings
         (guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice, warningLogChannelName, warningLogChannelNameUse, warningDuration,
         maxWarnings, warningsNotice, banLogChannelName, banLogChannelNameUse, deletingMessagesFromBannedUsers, kickLogChannelName, kickLogChannelNameUse,
         reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language,
-        automod,NotAutomodChannels, automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        automod,NotAutomodChannels, automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks,helpLogChannelName,
+        helpLogChannelNameUse,manRoleName,girlRoleName,newMemberRoleName,banRoleName,supportRoleName,podkastRoleName,moderatorRoleName,
+        eventRoleName,controlRoleName,creativeRoleName,applicationsLogChannelName,applicationsLogChannelNameUse,randomRoomName,loversRoleName, 
+        weddingsLogChannelName, weddingsLogChannelNameUse)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`,
       [
         guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice, warningLogChannelName, warningLogChannelNameUse, warningDuration,
         maxWarnings, warningsNotice, banLogChannelName, banLogChannelNameUse, deletingMessagesFromBannedUsers, kickLogChannelName, kickLogChannelNameUse,
-        reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language, automod,NotAutomodChannels, automodBlacklist,
-        automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks
+        reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language, automod, NotAutomodChannels, automodBlacklist,
+        automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName, helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName,
+        supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse,
+        randomRoomName,loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse
       ], (err) => {
         if (err) {
           console.error(`Ошибка при сохранении настроек сервера: ${err.message}`);
@@ -117,35 +143,55 @@ async function initializeDefaultServerSettings(guildId) {
     if (!settings.logChannelName) {
       const defaultSettings = {
         guildId: guildId,
-        muteLogChannelName: process.env.MUTE_LOGCHANNELNAME || 'mute_stan_log',
-        muteLogChannelNameUse: process.env.MUTE_LOGCHANNELNAME_USE === '0'? false : true,
+        muteLogChannelName: process.env.MUTE_LOGCHANNELNAME || 'mute_HellinModerator_log',
+        muteLogChannelNameUse: process.env.MUTE_LOGCHANNELNAME_USE === '0' ? false : true,
         mutedRoleName: process.env.MUTEDROLENAME || 'Muted',
         muteDuration: process.env.MUTE_DURATION || '5m',
         muteNotice: process.env.MUTE_NOTICE === '1',
-        warningLogChannelName: process.env.WARNING_LOGCHANNELNAME || 'warn_stan_log',
-        warningLogChannelNameUse: process.env.WARNING_LOGCHANNELNAME_USE === '0'? false : true,
+        warningLogChannelName: process.env.WARNING_LOGCHANNELNAME || 'warn_HellinModerator_log',
+        warningLogChannelNameUse: process.env.WARNING_LOGCHANNELNAME_USE === '0' ? false : true,
         warningDuration: process.env.WARNING_DURATION || '30m',
         maxWarnings: parseInt(process.env.MAX_WARNINGS, 10) || 3,
         warningsNotice: process.env.WARNINGS_NOTICE === '1',
-        banLogChannelName: process.env.BAN_LOGCHANNELNAME || 'ban_stan_log',
-        banLogChannelNameUse: process.env.BAN_LOGCHANNELNAME_USE === '0'? false : true,
+        banLogChannelName: process.env.BAN_LOGCHANNELNAME || 'ban_HellinModerator_log',
+        banLogChannelNameUse: process.env.BAN_LOGCHANNELNAME_USE === '0' ? false : true,
         deletingMessagesFromBannedUsers: process.env.DELETING_MESSAGES_FROM_BANNED_USERS === '1',
-        kickLogChannelName: process.env.KICK_LOGCHANNELNAME || 'kick_stan_log',
-        kickLogChannelNameUse: process.env.KICK_LOGCHANNELNAME_USE === '0'? false : true,
-        reportLogChannelName: process.env.REPORT_LOGCHANNELNAME || 'report_stan_log',
-        reportLogChannelNameUse: process.env.REPORT_LOGCHANNELNAME_USE === '0'? false : true,
-        clearLogChannelName: process.env.CLEAR_LOGCHANNELNAME || 'clear_stan_log',
-        clearLogChannelNameUse: process.env.CLEAR_LOGCHANNELNAME_USE === '0'? false : true,
-        clearNotice: process.env.CLEAR_NOTICE === '0'? false : true,
-        logChannelName: process.env.LOGCHANNELNAME || 'stan_logs',
+        kickLogChannelName: process.env.KICK_LOGCHANNELNAME || 'kick_HellinModerator_log',
+        kickLogChannelNameUse: process.env.KICK_LOGCHANNELNAME_USE === '0' ? false : true,
+        reportLogChannelName: process.env.REPORT_LOGCHANNELNAME || 'report_HellinModerator_log',
+        reportLogChannelNameUse: process.env.REPORT_LOGCHANNELNAME_USE === '0' ? false : true,
+        clearLogChannelName: process.env.CLEAR_LOGCHANNELNAME || 'clear_HellinModerator_log',
+        clearLogChannelNameUse: process.env.CLEAR_LOGCHANNELNAME_USE === '0' ? false : true,
+        clearNotice: process.env.CLEAR_NOTICE === '0' ? false : true,
+        logChannelName: process.env.LOGCHANNELNAME || 'HellinModerator_logs',
         language: process.env.LANGUAGE || 'eng',
         automod: process.env.AUTOMOD === '0' ? false : true,
-        NotAutomodChannels: process.env.NOTAUTOMODCHANNELS || 'stan_logs, clear_stan_log',
+        NotAutomodChannels: process.env.NOTAUTOMODCHANNELS || 'HellinModerator_logs, clear_HellinModerator_log',
         automodBlacklist: process.env.AUTOMODBLACKLIST || 'fuck',
         automodBadLinks: process.env.AUTOMODBADLINKS || 'azino777cashcazino-slots.ru',
-        uniteautomodblacklists: process.env.UNITE_AUTOMODBLACKLISTS || '0'? false : true,
-        uniteAutomodBadLinks: process.env.UNITE_AUTOMODBADLINKS || '0'? false : true,
+        uniteautomodblacklists: process.env.UNITE_AUTOMODBLACKLISTS || '0' ? false : true,
+        uniteAutomodBadLinks: process.env.UNITE_AUTOMODBADLINKS || '0' ? false : true,
+        helpLogChannelName: process.env.HELP_LOGCHANNELNAME || 'help_HellinModerator_log',
+        helpLogChannelNameUse: process.env.HELP_LOGCHANNELNAME_USE || '0' ? false : true,
+        manRoleName: process.env.MANROLENAME || '♂',
+        girlRoleName: process.env.GIRLROLENAME || '♀',
+        newMemberRoleName: process.env.NEWMEMBERROLENAME || 'Новичок',
+        banRoleName: process.env.BANROLENAME || 'Ban',
+        applicationsLogChannelName: process.env.APPLICATIONS_LOGCHANNELNAME || 'applications_HellinModerator_log',
+        applicationsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true,
+        randomRoomName: process.env.RANDOM_ROOM_NAME || '🎮Рандомная комната',
+        loversRoleName: process.env.LOVERSROLENAME || '💞',
+        supportRoleName: process.env.SUPPORTROLENAME || 'Саппорт', 
+        podkastRoleName: process.env.PODKASTROLENAME || 'Ведущий', 
+        moderatorRoleName: process.env.MODERATORROLENAME || 'Модератор', 
+        eventRoleName: process.env.EVENTROLENAME || 'Ивентер', 
+        controlRoleName: process.env.CONTROLROLENAME || 'Контрол', 
+        creativeRoleName: process.env.CREATIVEROLENAME || 'Креатив', 
+        weddingsLogChannelName: process.env.RANDOM_ROOM_NAME || '🖤свадьба',
+        weddingsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true
+       
       };
+
       await saveServerSettings(guildId, defaultSettings);
       console.log(`Настройки по умолчанию инициализированы для сервера: ${guildId}`);
     }

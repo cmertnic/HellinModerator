@@ -1,8 +1,7 @@
 const { ChannelType, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getOrCreateVoiceChannel } = require('../../events');
-
-const ROOM_NAME = '🎮Рандомная комната';
+const { getServerSettings } = require('../../database/settingsDb');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -18,7 +17,8 @@ module.exports = {
         if (interaction.channel.type === ChannelType.DM) {
             return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
         }
-
+        const serverSettings = await getServerSettings(interaction.guild.id);
+        const { randomRoomName } = serverSettings;
         // Проверка прав администратора у пользователя, вызвавшего команду
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return await interaction.reply({ content: i18next.t('Admin_user_check'), ephemeral: true });
@@ -33,7 +33,7 @@ module.exports = {
         const botMember = interaction.guild.members.me;
 
         // Создаем или получаем голосовую комнату с заранее заданным названием
-        const { channel, created } = await getOrCreateVoiceChannel(interaction.guild, ROOM_NAME, botMember);
+        const { channel, created } = await getOrCreateVoiceChannel(interaction.guild, randomRoomName, botMember);
 
         if (!channel) {
             return await interaction.editReply({ content: i18next.t('randomroom-js_channel_creation_error'), ephemeral: true });

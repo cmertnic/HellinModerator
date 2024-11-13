@@ -48,25 +48,25 @@ module.exports = {
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const { logChannelName, logChannelNameUse } = serverSettings;
+            const {banRoleName, logChannelName,banLogChannelName, banLogChannelNameUse } = serverSettings;
 
             // Проверка наличия роли "Ban"
-            const banRole = interaction.guild.roles.cache.find(role => role.name === 'Ban');
+            const banRole = interaction.guild.roles.cache.find(role => role.name === banRoleName);
             if (!banRole) {
-                await createRoles(interaction, ['Ban']);
+                await createRoles(interaction, [banRoleName]);
             }
 
             // Получение канала для логирования
             let logChannel;
-            if (logChannelNameUse) {
-                logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+            if (banLogChannelNameUse) {
+                logChannel = interaction.guild.channels.cache.find(ch => ch.name === banLogChannelName);
             } else {
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
             }
 
             // Проверка наличия канала для логирования
             if (!logChannel) {
-                const channelNameToCreate = logChannelNameUse ? logChannelName : logChannelName;
+                const channelNameToCreate = banlogChannelNameUse ? banLogChannelName : logChannelName;
                 const roles = interaction.guild.roles.cache;
                 const botMember = interaction.guild.members.me;
                 const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);

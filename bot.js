@@ -191,16 +191,19 @@ const rest = new REST().setToken(process.env.TOKEN);
     });
     // Событие при добавлении нового участника на сервер
     robot.on('guildMemberAdd', async (member) => {
+      if (message.author.bot) return;
       try {
+        const serverSettings = await getServerSettings(interaction.guild.id);
+        const { newMemberRoleName } = serverSettings;
         // Получаем роль "Новичок"
-        const role = member.guild.roles.cache.find(r => r.name === 'Новичок');
+        const role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
 
         if (role) {
           // Выдаем роль пользователю
           await member.roles.add(role);
         } else {
           async function ensureRolesExist(interaction) {
-            const rolesToCreate = ['Новичок'];
+            const rolesToCreate = [newMemberRoleName];
             const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
           }
           const roleCreationMessages = await ensureRolesExist(interaction);
