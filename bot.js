@@ -191,7 +191,6 @@ const rest = new REST().setToken(process.env.TOKEN);
     });
     // Событие при добавлении нового участника на сервер
     robot.on('guildMemberAdd', async (member) => {
-      if (message.author.bot) return;
       try {
         const serverSettings = await getServerSettings(interaction.guild.id);
         const { newMemberRoleName } = serverSettings;

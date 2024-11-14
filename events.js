@@ -637,7 +637,6 @@ async function handleButtonInteraction(interaction, config, page) {
         }
     }
 }
-
 // Функция для отображения меню настроек
 async function displaySettings(interaction, config, page = 1) {
     const itemsPerPage = 5;
