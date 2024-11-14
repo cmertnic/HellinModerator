@@ -3,7 +3,7 @@ const { ChannelType, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, Act
 const { i18next } = require('../../i18n'); // Импорт i18next для интернационализации
 const { createRoles, createLogChannel } = require('../../events'); // Импорт функций для создания ролей и лог-канала
 const userCommandCooldowns = new Map(); // Карта для отслеживания кулдаунов команд пользователей
-
+const { saveServerSettings, getServerSettings } = require('../../database/settingsDb');
 // Функция для проверки существования необходимых ролей на сервере
 async function ensureRolesExist(interaction) {
     const serverSettings = await getServerSettings(interaction.guild.id);
