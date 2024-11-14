@@ -33,7 +33,7 @@
     "i18next": "23.16.5",
     "i18next-fs-backend": "2.3.2",
     "latest": "0.2.0",
-    "node": "23.2.0",
+    "node": "18.20.5",
     "node-cron": "3.0.3",
     "node-schedule": "2.1.1",
     "npm-force-resolutions": "0.0.10",
