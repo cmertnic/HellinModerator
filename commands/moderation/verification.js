@@ -91,7 +91,6 @@ module.exports = {
                         const rookieRole = interaction.guild.roles.cache.find(role => role.name === newMemberRoleName);
                         if (rookieRole && memberToVerify.roles.cache.has(rookieRole.id)) {
                             await memberToVerify.roles.remove(rookieRole);
-                            console.log(`Роль "Новичок" была удалена у пользователя ${userIdToVerify}.`);
                         }
 
                         // Отправка личного сообщения пользователю
