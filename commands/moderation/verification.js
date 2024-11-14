@@ -1,13 +1,8 @@
-const { Client, ChannelType, EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { i18next } = require('../../i18n');
+const { SlashCommandBuilder } = require('@discordjs/builders');
+const { ChannelType, EmbedBuilder } = require('discord.js');
+const { i18next, t } = require('../../i18n');
+const { createMainLogChannel, createRoles } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createLogChannel, createRoles } = require('../../events');
-async function ensureRolesExist(interaction) {
-    const serverSettings = await getServerSettings(interaction.guild.id);
-    const {manRoleName,girlRoleName } = serverSettings;
-    const rolesToCreate = [manRoleName, girlRoleName];
-    const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
-}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,7 +22,7 @@ module.exports = {
                 { name: ('Изменить гендер'), value: 'change_gender' }
             ))
         .addStringOption(option => option
-            .setName('gender') // Изменено с 'Гендер' на 'gender'
+            .setName('gender') 
             .setDescription('Выберите гендер пользователя (необязательно)')
             .setRequired(false)
             .addChoices(
@@ -42,40 +37,40 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            const roleCreationMessages = await ensureRolesExist(interaction);
-            if (roleCreationMessages) {
-                console.log(roleCreationMessages); // Логирование сообщений о создании ролей
-            }
-            const userIdToVerify = interaction.options.getUser ('user').id; // Изменено с 'Пользователь' на 'user'
-            const action = interaction.options.getString('action'); // Изменено с 'Действие' на 'action'
+            const userIdToVerify = interaction.options.getUser ('user').id; 
+            const action = interaction.options.getString('action'); 
             const memberToVerify = await interaction.guild.members.fetch(userIdToVerify);
 
             if (!memberToVerify) {
-                return await interaction.editReply({ content: i18next.t('User _not_found'), ephemeral: true });
+                return await interaction.editReply({ content: i18next.t('User_not_found'), ephemeral: true });
             }
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const { logChannelName,manRoleName,girlRoleName,newmemberrolename } = serverSettings;
-            const gender = interaction.options.getString('gender'); // Изменено с 'Гендер' на 'gender'
+            const { logChannelName, manRoleName, girlRoleName, newmemberrolename } = serverSettings;
+            const gender = interaction.options.getString('gender'); 
             const botMember = interaction.guild.members.me;
             let logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
 
-            // Если канал для логов не найден, создаем его
+            // Проверка и создание лог-канала, если он не найден
             if (!logChannel) {
-                const logChannelCreationResult = await createLogChannel(interaction, logChannelName, botMember, interaction.guild.roles.cache, serverSettings);
+                const channelCreationMessage = await createMainLogChannel(interaction, logChannelName, botMember, interaction.guild.roles.cache.filter(role => botMember.roles.highest.comparePositionTo(role) < 0), serverSettings);
 
-                if (logChannelCreationResult.startsWith('Ошибка')) {
-                    return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
-                }
-
+                // Логирование результата создания канала
+                console.log(channelCreationMessage);
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+                if (!logChannel) {
+                    return await interaction.editReply({ content: 'Не удалось создать или найти канал логов.', ephemeral: true });
+                }
             }
 
-            // Проверяем наличие прав у бота
+            // Проверка прав на отправку сообщений
             if (!logChannel.permissionsFor(botMember).has('SEND_MESSAGES')) {
-                return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в лог-канал.', ephemeral: true });
+                return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в канал логов.', ephemeral: true });
             }
+
+            const rolesToCreate = [manRoleName, girlRoleName];
+            const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
 
             switch (action) {
                 case 'give_role':
@@ -96,11 +91,13 @@ module.exports = {
 
                         await memberToVerify.roles.add(roleToAssign);
                         await interaction.editReply({ content: i18next.t('verify-js_role_add', { rolename: roleToAssign.name, userIdToVerify: userIdToVerify }), ephemeral: true });
+
                         // Убираем роль "Новичок", если она есть
                         const rookieRole = interaction.guild.roles.cache.find(role => role.name === newmemberrolename);
                         if (rookieRole && memberToVerify.roles.cache.has(rookieRole.id)) {
                             await memberToVerify.roles.remove(rookieRole);
                         }
+
                         // Отправка личного сообщения пользователю
                         try {
                             await memberToVerify.send(i18next.t('verify-js_role_assigned_message', { rolename: roleToAssign.name, moderator: interaction.user.id }));
@@ -118,11 +115,13 @@ module.exports = {
 
                         // Отправка embed в канал логов
                         await logChannel.send({ embeds: [genderSelectEmbed] });
-                    } 
+                    } else {
+                        await interaction.editReply({ content: 'Роль не найдена.', ephemeral: true });
+                    }
                     break;
 
                 case 'deny_access':
-                    const reason = 'Недопуск'; // Указываем причину бана
+                    const reason = 'Non-admission'; 
                     await memberToVerify.ban({ reason }).catch(error => {
                         console.error(`Ошибка при бане пользователя: ${error.message}`);
                         return interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
