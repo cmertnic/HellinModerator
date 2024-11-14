@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 // Импортируем необходимые модули
-const { Client, Collection, GatewayIntentBits, Partials, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
+const {Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
@@ -10,7 +10,7 @@ const { getAllMemberIds, updateMembersInfo } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel } = require('./events');
+const { createLogChannel,createRoles } = require('./events');
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
 let bad_links = [];

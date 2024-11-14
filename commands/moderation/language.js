@@ -7,7 +7,7 @@ const userCommandCooldowns = new Map();
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('language')
-    .setDescription('Язык сервера'),
+    .setDescription('язык сервера'),
 
   async execute(robot, interaction) {
     if (interaction.user.bot) return;
@@ -46,7 +46,6 @@ module.exports = {
     const selectMenuRow = new ActionRowBuilder().addComponents(selectMenu);
 
     await interaction.reply({
-      content: i18next.t('language-js_select_language_prompt'),
       components: [selectMenuRow],
       ephemeral: true,
     });

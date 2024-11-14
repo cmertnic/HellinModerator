@@ -12,7 +12,7 @@ async function ensureRolesExist(interaction) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('verify')
-        .setDescription('verify-js_description')
+        .setDescription('Верификация пользователя')
         .addUserOption(option => option
             .setName('user')
             .setDescription('Верификация пользователя')
@@ -42,6 +42,10 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         try {
+            const roleCreationMessages = await ensureRolesExist(interaction);
+            if (roleCreationMessages) {
+                console.log(roleCreationMessages); // Логирование сообщений о создании ролей
+            }
             const userIdToVerify = interaction.options.getUser ('user').id; // Изменено с 'Пользователь' на 'user'
             const action = interaction.options.getString('action'); // Изменено с 'Действие' на 'action'
             const memberToVerify = await interaction.guild.members.fetch(userIdToVerify);
@@ -71,12 +75,6 @@ module.exports = {
             // Проверяем наличие прав у бота
             if (!logChannel.permissionsFor(botMember).has('SEND_MESSAGES')) {
                 return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в лог-канал.', ephemeral: true });
-            }
-
-            // Убедимся, что роли "М" и "Ж" существуют
-            const roleCreationMessages = await ensureRolesExist(interaction);
-            if (roleCreationMessages) {
-                console.log(roleCreationMessages); // Логирование сообщений о создании ролей
             }
 
             switch (action) {
@@ -120,9 +118,7 @@ module.exports = {
 
                         // Отправка embed в канал логов
                         await logChannel.send({ embeds: [genderSelectEmbed] });
-                    } else {
-                        await interaction.editReply({ content: 'Роль не найдена.', ephemeral: true });
-                    }
+                    } 
                     break;
 
                 case 'deny_access':
