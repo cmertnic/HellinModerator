@@ -189,7 +189,6 @@ const rest = new REST().setToken(process.env.TOKEN);
         await interaction.reply({ content: 'Произошла ошибка при выполнении команды!', ephemeral: true });
       }
     });
-        // Событие при добавлении нового участника на сервер
     // Событие при добавлении нового участника на сервер
 robot.on('guildMemberAdd', async (member) => {
   try {
