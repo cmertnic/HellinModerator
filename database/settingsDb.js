@@ -90,7 +90,6 @@ async function removeStaleSettings(guildIds) {
         console.error('Ошибка при удалении устаревших настроек:', err.message);
         reject(err);
       } else {
-        console.log(`Удалено ${this.changes} устаревших записей настроек из базы данных.`);
         resolve();
       }
     });
@@ -136,85 +135,39 @@ function saveServerSettings(guildId, settings) {
   });
 }
 
-// Функция для получения настроек сервера из базы данных
-async function getServerSettings(guildId) {
-  return new Promise((resolve, reject) => {
-    db.get(`SELECT * FROM server_settings WHERE guildId = ?`, [guildId], (err, row) => {
-      if (err) {
-        console.error(`Ошибка при получении настроек сервера: ${err.message}`);
-        reject(err);
-      } else {
-        resolve(row || {});
-      }
-    });
-  });
-}
-
 // Функция для инициализации настроек сервера по умолчанию
 async function initializeDefaultServerSettings(guildId, allGuildIds) {
   try {
-    const settings = await getServerSettings(guildId);
-    if (!settings.logChannelName) {
-      const defaultSettings = {
-        guildId: guildId,
-        muteLogChannelName: process.env.MUTE_LOGCHANNELNAME || 'mute_HellinModerator_log',
-        muteLogChannelNameUse: process.env.MUTE_LOGCHANNELNAME_USE === '0' ? false : true,
-        mutedRoleName: process.env.MUTEDROLENAME || 'Muted',
-        muteDuration: process.env.MUTE_DURATION || '5m',
-        muteNotice: process.env.MUTE_NOTICE === '1',
-        warningLogChannelName: process.env.WARNING_LOGCHANNELNAME || 'warn_HellinModerator_log',
-        warningLogChannelNameUse: process.env.WARNING_LOGCHANNELNAME_USE === '0' ? false : true,
-        warningDuration: process.env.WARNING_DURATION || '30m',
-        maxWarnings: parseInt(process.env.MAX_WARNINGS, 10) || 3,
-        warningsNotice: process.env.WARNINGS_NOTICE === '1',
-        banLogChannelName: process.env.BAN_LOGCHANNELNAME || 'ban_HellinModerator_log',
-        banLogChannelNameUse: process.env.BAN_LOGCHANNELNAME_USE === '0' ? false : true,
-        deletingMessagesFromBannedUsers: process.env.DELETING_MESSAGES_FROM_BANNED_USERS === '1',
-        kickLogChannelName: process.env.KICK_LOGCHANNELNAME || 'kick_HellinModerator_log',
-        kickLogChannelNameUse: process.env.KICK_LOGCHANNELNAME_USE === '0' ? false : true,
-        reportLogChannelName: process.env.REPORT_LOGCHANNELNAME || 'report_HellinModerator_log',
-        reportLogChannelNameUse: process.env.REPORT_LOGCHANNELNAME_USE === '0' ? false : true,
-        clearLogChannelName: process.env.CLEAR_LOGCHANNELNAME || 'clear_HellinModerator_log',
-        clearLogChannelNameUse: process.env.CLEAR_LOGCHANNELNAME_USE === '0' ? false : true,
-        clearNotice: process.env.CLEAR_NOTICE === '0' ? false : true,
-        logChannelName: process.env.LOGCHANNELNAME || 'HellinModerator_logs',
-        language: process.env.LANGUAGE || 'eng',
-        automod: process.env.AUTOMOD === '0' ? false : true,
-        NotAutomodChannels: process.env.NOTAUTOMODCHANNELS || 'HellinModerator_logs, clear_HellinModerator_log',
-        automodBlacklist: process.env.AUTOMODBLACKLIST || 'fuck',
-        automodBadLinks: process.env.AUTOMODBADLINKS || 'azino777cashcazino-slots.ru',
-        uniteautomodblacklists: process.env.UNITE_AUTOMODBLACKLISTS || '0' ? false : true,
-        uniteAutomodBadLinks: process.env.UNITE_AUTOMODBADLINKS || '0' ? false : true,
-        helpLogChannelName: process.env.HELP_LOGCHANNELNAME || 'help_HellinModerator_log',
-        helpLogChannelNameUse: process.env.HELP_LOGCHANNELNAME_USE === '0' ? false : true,
-        manRoleName: process.env.MANROLENAME || '♂',
-        girlRoleName: process.env.GIRLROLENAME || '♀',
-        newMemberRoleName: process.env.NEWMEMBERROLENAME || 'Новичок',
-        banRoleName: process.env.BANROLENAME || 'Ban',
-        applicationsLogChannelName: process.env.APPLICATIONS_LOGCHANNELNAME || 'applications_HellinModerator_log',
-        applicationsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true,
-        randomRoomName: process.env.RANDOM_ROOM_NAME || '🎮Рандомная комната',
-        loversRoleName: process.env.LOVERSROLENAME || '💞',
-        supportRoleName: process.env.SUPPORTROLENAME || 'Саппорт', 
-        podkastRoleName: process.env.PODKASTROLENAME || 'Ведущий', 
-        moderatorRoleName: process.env.MODERATORROLENAME || 'Модератор', 
-        eventRoleName: process.env.EVENTROLENAME || 'Ивентер', 
-        controlRoleName: process.env.CONTROLROLENAME || 'Контрол', 
-        creativeRoleName: process.env.CREATIVEROLENAME || 'Креатив', 
-        weddingsLogChannelName: process.env.RANDOM_ROOM_NAME || '🖤свадьба',
-        weddingsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true
-      };
+      const settings = await getServerSettings(guildId);
+      if (!settings.logChannelName) {
+          const defaultSettings = {
+              guildId: guildId,
+              // Другие настройки
+          };
 
-      await saveServerSettings(guildId, defaultSettings);
-      console.log(`Настройки по умолчанию инициализированы для сервера: ${guildId}`);
-    }
+          await saveServerSettings(guildId, defaultSettings);
+          console.log(`Настройки по умолчанию инициализированы для сервера: ${guildId}`);
+      }
 
-    // Удаляем устаревшие записи
-    await removeStaleSettings(allGuildIds);
+      // Удаляем устаревшие записи
+      await removeStaleSettings(allGuildIds);
   } catch (err) {
-    console.error(`Ошибка при инициализации настроек сервера: ${err.message}`);
-    throw err;
+      console.error(`Ошибка при инициализации настроек сервера: ${err.message}`);
+      throw err;
   }
+}
+
+async function getServerSettings(guildId) {
+  return new Promise((resolve, reject) => {
+      db.get(`SELECT * FROM server_settings WHERE guildId = ?`, [guildId], (err, row) => {
+          if (err) {
+              console.error(`Ошибка при получении настроек сервера: ${err.message}`);
+              reject(err);
+          } else {
+              resolve(row ? [row] : []); // Возвращаем массив
+          }
+      });
+  });
 }
 
 // Экспортируем функции для использования в других модулях
