@@ -1,7 +1,7 @@
 const { ChannelType, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createRoles } = require('../../events');
+const { createRoles,createLogChannel } = require('../../events');
 
 async function ensureRolesExist(interaction) {
     const serverSettings = await getServerSettings(interaction.guild.id);

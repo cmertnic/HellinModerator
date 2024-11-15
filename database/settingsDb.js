@@ -135,14 +135,26 @@ async function getServerSettings(guildId) {
     });
   });
 }
-
+// Функция для удаления устаревших записей из таблицы server_settings
+async function removeStaleSettings(guildIds) {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM server_settings WHERE guildId NOT IN (' + guildIds.map(() => '?').join(',') + ')', guildIds, function(err) {
+      if (err) {
+        console.error('Ошибка при удалении устаревших настроек:', err.message);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
 // Функция для инициализации настроек сервера по умолчанию
-async function initializeDefaultServerSettings(guildId) {
+async function initializeDefaultServerSettings(guildId, allGuildIds) {
   try {
     const settings = await getServerSettings(guildId);
     if (!settings.logChannelName) {
       const defaultSettings = {
-        guildId: guildId,
+          guildId: guildId,
         muteLogChannelName: process.env.MUTE_LOGCHANNELNAME || 'mute_HellinModerator_log',
         muteLogChannelNameUse: process.env.MUTE_LOGCHANNELNAME_USE === '0' ? false : true,
         mutedRoleName: process.env.MUTEDROLENAME || 'Muted',
@@ -191,7 +203,7 @@ async function initializeDefaultServerSettings(guildId) {
         weddingsLogChannelNameUse: process.env.APPLICATIONS_LOGCHANNELNAME_USE === '0' ? false : true
        
       };
-
+      await removeStaleSettings(allGuildIds);
       await saveServerSettings(guildId, defaultSettings);
       console.log(`Настройки по умолчанию инициализированы для сервера: ${guildId}`);
     }
@@ -205,5 +217,6 @@ async function initializeDefaultServerSettings(guildId) {
 module.exports = {
   saveServerSettings,
   initializeDefaultServerSettings,
-  getServerSettings
+  getServerSettings,
+  removeStaleSettings
 };

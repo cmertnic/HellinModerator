@@ -8,7 +8,7 @@ const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
 const { getAllMemberIds, updateMembersInfo } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
-const { removeExpiredMutes } = require('./database/mutesDb');
+const { removeExpiredMutes,removeUserMuteFromDatabase } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
 const { createLogChannel, createRoles } = require('./events');
 // Инициализируем массивы для хранения черного списка и плохих ссылок
@@ -501,23 +501,28 @@ const rest = new REST().setToken(process.env.TOKEN);
           try {
             // Получаем настройки сервера
             const serverSettings = await getServerSettings(guildId);
-
+    
             // Получаем ID всех участников
             const memberIds = await getAllMemberIds(guild);
-
+    
             // Обновляем информацию об участниках
             await updateMembersInfo(robot, guildId, memberIds);
-
+    
             // Удаление истекших предупреждений и мутов
             await removeExpiredWarnings(robot, guildId, serverSettings, memberIds);
             await removeExpiredMutes(robot, guildId);
+    
+            // Удаление данных о пользователях из базы данных
+            for (const memberId of memberIds) {
+              await removeUserMuteFromDatabase(guildId, memberId);
+            }
+    
           } catch (error) {
             console.error(`Ошибка при обработке сервера ${guildId}:`, error);
           }
         }
       });
     }
-
 
     setupCronJobs();
     robot.login(process.env.TOKEN);

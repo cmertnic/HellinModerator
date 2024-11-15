@@ -63,7 +63,20 @@ async function getMuteFromDatabase(userId) {
         });
     });
 }
-
+// Функция для удаления данных о пользователе из базы данных
+async function removeUserMuteFromDatabase(guildId, userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'DELETE FROM mutes WHERE userId = ? AND guildId = ?';
+        mutesDb.run(query, [userId, guildId], function (err) {
+            if (err) {
+                console.error(`Ошибка при удалении данных о пользователе ${userId} из базы данных: ${err.message}`);
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
 // Функция для удаления мута из базы данных
 async function removeMuteFromDatabase(robot, guildId, userId) {
     const serverSettings = await getServerSettings(guildId);
@@ -87,6 +100,7 @@ async function removeMuteFromDatabase(robot, guildId, userId) {
     const memberToMute = await guild.members.fetch(userId);
     if (!memberToMute) {
         console.error(`Участник с ID ${userId} не найден в гильдии ${guildId}`);
+        await removeUserMuteFromDatabase(guildId, userId);
         return;
     }
 
@@ -195,13 +209,15 @@ async function removeExpiredMutes(robot, guildId) {
 
         for (const mute of expiredMutes) {
             try {
-
-                const member = await guild.members.fetch(mute.userId).catch(() => null);
-                if (!member) {
+                let member;
+                try {
+                    member = await guild.members.fetch(mute.userId);
+                } catch (error) {
                     console.error(`Пользователь с ID ${mute.userId} не найден на сервере.`);
-                    continue;
+                    // Удаляем данные о пользователе из базы данных
+                    await removeUserMuteFromDatabase(guildId, mute.userId);
+                    continue; // Пропускаем итерацию, если участник не найден
                 }
-
                 await removeMuteFromDatabase(robot, guildId, mute.userId);
 
 
@@ -222,5 +238,6 @@ module.exports = {
     getAllActiveMutes,
     getExpiredMutes,
     removeMuteFromDatabase,
-    removeExpiredMutes
+    removeExpiredMutes,
+    removeUserMuteFromDatabase
 };
