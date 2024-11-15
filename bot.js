@@ -8,9 +8,9 @@ const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
 const { getAllMemberIds, updateMembersInfo } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
-const { removeExpiredMutes,removeUserMuteFromDatabase } = require('./database/mutesDb');
+const { removeExpiredMutes, removeUserMuteFromDatabase } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel, createRoles } = require('./events');
+const { createLogChannel, createRoles, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
 let bad_links = [];
@@ -189,58 +189,29 @@ const rest = new REST().setToken(process.env.TOKEN);
         await interaction.reply({ content: 'Произошла ошибка при выполнении команды!', ephemeral: true });
       }
     });
-    // Событие при добавлении нового участника на сервер
+
+    // Обработка новых участников
     robot.on('guildMemberAdd', async (member) => {
       try {
         const serverSettings = await getServerSettings(member.guild.id);
-        const {newMemberRoleName} = serverSettings;
+        const { banRoleName, newMemberRoleName } = serverSettings;
+        const currentTime = Date.now();
 
-        // Получаем роль "Новичок"
-        let role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
+        // Сохраняем время присоединения
+        memberJoinTimes.set(member.id, currentTime);
 
-        if (role) {
-          // Выдаем роль пользователю
-          await member.roles.add(role);
-          console.log(`Роль "${newMemberRoleName}" выдана пользователю ${member.user.tag}`);
-        } else {
-          // Если роль не найдена, создаем ее
-          const roleCreationMessages = await ensureRolesExist(member.guild, newMemberRoleName);
-          if (roleCreationMessages) {
-            console.log(roleCreationMessages);
-            // После создания роли снова получаем её и выдаем пользователю
-            role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
-            if (role) {
-              await member.roles.add(role);
-              console.log(`Роль "${newMemberRoleName}" выдана пользователю ${member.user.tag} после создания.`);
-            }
-          }
-        }
+        // Проверяем условия анти-рейда
+        await checkAntiRaidConditions(member, banRoleName);
+
+        // Выдаем роль "Новичок"
+        await assignNewMemberRole(member, newMemberRoleName);
+
       } catch (error) {
-        console.error(`Ошибка при выдаче роли "${newMemberRoleName}": ${error.message}`);
+        console.error(`Ошибка при обработке нового участника ${member.user.tag}: ${error.message}`);
       }
     });
-    // Функция для проверки и создания роли
-    async function ensureRolesExist(guild, roleName) {
-      let role = guild.roles.cache.find(r => r.name === roleName);
 
-      if (!role) {
-        try {
-          role = await guild.roles.create({
-            name: roleName,
-            color: 0x0000FF, // Синий цвет
-            reason: 'Создание роли "Новичок" для новых участников'
-          });
-          console.log(`Роль "${roleName}" успешно создана.`);
-        } catch (error) {
-          console.error(`Ошибка при создании роли "${roleName}": ${error.message}`);
-          return null; // Возвращаем null, если произошла ошибка
-        }
-      } else {
-        console.log(`Роль "${roleName}" уже существует.`);
-      }
 
-      return role;
-    }
 
     robot.on('messageCreate', async (message) => {
       if (!message.guild || message.author.bot) return;
@@ -501,28 +472,134 @@ const rest = new REST().setToken(process.env.TOKEN);
           try {
             // Получаем настройки сервера
             const serverSettings = await getServerSettings(guildId);
-    
+
             // Получаем ID всех участников
             const memberIds = await getAllMemberIds(guild);
-    
+
             // Обновляем информацию об участниках
             await updateMembersInfo(robot, guildId, memberIds);
-    
+
             // Удаление истекших предупреждений и мутов
             await removeExpiredWarnings(robot, guildId, serverSettings, memberIds);
             await removeExpiredMutes(robot, guildId);
-    
+
             // Удаление данных о пользователях из базы данных
             for (const memberId of memberIds) {
               await removeUserMuteFromDatabase(guildId, memberId);
             }
-    
+
           } catch (error) {
             console.error(`Ошибка при обработке сервера ${guildId}:`, error);
           }
         }
       });
     }
+    // Обработка новых участников
+    robot.on('guildMemberAdd', async (member) => {
+      try {
+        const serverSettings = await getServerSettings(member.guild.id);
+        const { banRoleName, newMemberRoleName } = serverSettings;
+        const currentTime = Date.now();
+
+        // Сохраняем время присоединения
+        memberJoinTimes.set(member.id, currentTime);
+
+        // Проверяем условия анти-рейда
+        await checkAntiRaidConditions(member, banRoleName);
+
+        // Выдаем роль "Новичок"
+        await assignNewMemberRole(member, newMemberRoleName);
+
+      } catch (error) {
+        console.error(`Ошибка при обработке нового участника ${member.user.tag}: ${error.message}`);
+      }
+    });
+
+    // Защита от ссылок на другие Discord-серверы
+    robot.on('messageCreate', async (message) => {
+      const serverSettings = await getServerSettings(message.guild.id);
+      const { banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse } = serverSettings;
+      if (message.author.bot) return; // Игнорируем сообщения от ботов
+    
+      const discordLinkPattern = /https?:\/\/(www\.)?discord\.gg\/[a-zA-Z0-9]+/; // Регулярное выражение для ссылок на Discord
+      const guild = message.guild;
+      let logChannel;
+    
+      // Определяем, какой лог-канал использовать
+      if (banLogChannelNameUse) {
+        logChannel = guild.channels.cache?.find(ch => ch.name === banLogChannelName);
+      } else {
+        logChannel = guild.channels.cache?.find(ch => ch.name === logChannelName);
+      }
+    
+      // Если канал логирования не существует, создаем его
+      if (!logChannel) {
+        const channelNameToCreate = banLogChannelNameUse ? banLogChannelName : logChannelName;
+        const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, guild.members.cache.get(robot.user.id), guild.roles.cache.filter(role => role.comparePositionTo(guild.members.cache.get(robot.user.id).roles.highest) > 0), serverSettings);
+    
+        if (logChannelCreationResult.startsWith('Ошибка')) {
+          return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+        }
+    
+        // Обновляем переменную logChannel созданного канала
+        logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+      }
+    
+      // Проверка на наличие ссылки на Discord
+      if (discordLinkPattern.test(message.content)) {
+        await message.delete(); // Удаляем сообщение с ссылкой
+        try {
+          await message.author.send('Ваше сообщение было удалено, так как оно содержало ссылку на Discord сервер.'); // Уведомляем пользователя
+        } catch {}
+    
+        // Назначаем роль бана
+        const banRole = guild.roles.cache.find(r => r.name === banRoleName);
+        if (banRole) {
+          await message.member.roles.add(banRole);
+          // Логируем назначение роли
+          if (logChannel) {
+            await logChannel.send(`Пользователю ${message.author.tag} была назначена роль "${banRoleName}" за попытку отправить ссылку на Discord сервер.`);
+          }
+        }
+        return; // Завершаем выполнение функции
+      }
+    
+      // Защита от повторяющихся сообщений
+      const userMessages = userMessageHistory.get(message.author.id) || [];
+      const messageCount = userMessages.filter(msg => msg.content === message.content).length;
+    
+      if (messageCount >= 5) {
+        await message.delete(); // Удаляем сообщение, если оно повторяется более 5 раз
+        try {
+          await message.author.send('Ваше сообщение было удалено, так как вы отправили его более 5 раз.'); // Уведомляем пользователя
+        } catch (error) {
+          console.error(`Не удалось отправить сообщение пользователю ${message.author.tag}: ${error.message}`);
+        }
+    
+        // Назначаем роль бана
+        const banRole = guild.roles.cache.find(r => r.name === banRoleName);
+        if (banRole) {
+          await message.member.roles.add(banRole);
+          // Логируем назначение роли
+          if (logChannel) {
+            await logChannel.send(`Пользователю ${message.author.tag} была назначена роль "${banRoleName}" за спам (более 5 одинаковых сообщений).`);
+          }
+        }
+        return; // Завершаем выполнение функции
+      } else {
+        // Добавляем сообщение в историю
+        userMessages.push({ content: message.content, timestamp: Date.now() });
+        userMessageHistory.set(message.author.id, userMessages);
+      }
+    
+      // Удаляем старые сообщения из истории (например, старше 1 часа)
+      const oneHourAgo = Date.now() - 3600000;
+      userMessageHistory.set(message.author.id, userMessages.filter(msg => msg.timestamp > oneHourAgo));
+    });
+
+
+    // Хранилище для истории сообщений пользователей
+    const userMessageHistory = new Map();
 
     setupCronJobs();
     robot.login(process.env.TOKEN);
