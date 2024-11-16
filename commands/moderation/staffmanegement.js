@@ -1,7 +1,7 @@
 const { ChannelType, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getServerSettings } = require('../../database/settingsDb');
-const { createRoles,createLogChannel } = require('../../events');
+const { createRoles, createLogChannel } = require('../../events');
 
 async function ensureRolesExist(interaction) {
     const serverSettings = await getServerSettings(interaction.guild.id);
@@ -58,10 +58,22 @@ module.exports = {
             const memberToManage = await interaction.guild.members.fetch(userIdToManage);
 
             if (!memberToManage) {
-                return await interaction.editReply({ content: i18next.t('User _not_found'), ephemeral: true });
+                return await interaction.editReply({ content: i18next.t('User_not_found'), ephemeral: true });
             }
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const { supportRoleName, logChannelName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse } = serverSettings;
+            const {  supportRoleName, logChannelName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse } = serverSettings;
+
+            // Получаем роль бота
+            const botMember = interaction.guild.members.me;
+            
+            
+            // Проверка, есть ли у пользователя роль, которая выше роли бота
+            const hasRoleAboveBot = interaction.member.roles.cache.some(role => role.position > botMember.roles.highest.position);
+            
+            // Если у пользователя нет разрешённой роли и его роли не выше роли бота, отклоняем команду
+            if ( !hasRoleAboveBot) {
+                return await interaction.editReply({ content: 'У вас нет прав на выполнение этой команды.', ephemeral: true });
+            }
 
             // Получение канала для логирования
             let logChannel;
@@ -80,8 +92,6 @@ module.exports = {
                 await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
             }
-            // Название канала логирования
-            const botMember = interaction.guild.members.me;
 
             // Если канал для логов не найден, создаем его
             if (!logChannel) {

@@ -5,15 +5,17 @@ require('dotenv').config();
 const { Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
-const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
+const { initializeDefaultServerSettings, getServerSettings } = require('./database/settingsDb');
 const { getAllMemberIds, updateMembersInfo, removeStaleMembers } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
 const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
+
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
 let bad_links = [];
+const recentJoins = new Map(); // Хранит время присоединения участников
 
 // Загружаем черный список и плохие ссылки из файлов
 async function loadBlacklistAndBadLinks() {
@@ -196,12 +198,7 @@ const rest = new REST().setToken(process.env.TOKEN);
         const { banRoleName, newMemberRoleName, logChannelName, banLogChannelName, banLogChannelNameUse } = serverSettings;
 
         // Проверяем условия анти-рейда
-        const antiRaidResult = await checkAntiRaidConditions(member, banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse);
-        if (antiRaidResult) {
-          console.log(`Защита от рейдов: ${antiRaidResult}`);
-        } else {
-          console.log(`Участник ${member.user.tag} прошел проверку защиты от рейдов.`);
-        }
+        await checkAntiRaidConditions(member, banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse);
 
         // Выдаем роль новому участнику
         await assignNewMemberRole(member, newMemberRoleName);
@@ -518,10 +515,19 @@ const rest = new REST().setToken(process.env.TOKEN);
 
     function setupCronJobs() {
       cron.schedule('*/2 * * * *', async () => {
-        console.log('Запуск задачи по расписанию для удаления истекших предупреждений и мутов.');
+        console.log('Запуск задачи по расписанию для проверки ');
         for (const guild of robot.guilds.cache.values()) {
           const guildId = guild.id;
           try {
+            const now = Date.now();
+            const twoMinutesAgo = now - 2 * 60 * 1000; // Время 2 минуты назад
+            const recentMembers = [...recentJoins.entries()].filter(([id, time]) => time >= twoMinutesAgo);
+
+            if (recentMembers.length < 25) {
+
+              recentJoins.clear(); // Очищаем recentJoins, если менее 25 участников
+            }
+
             // Получаем настройки сервера
             const serverSettings = await getServerSettings(guildId);
 
@@ -543,7 +549,6 @@ const rest = new REST().setToken(process.env.TOKEN);
         }
       });
     }
-
 
     setupCronJobs();
     robot.login(process.env.TOKEN);

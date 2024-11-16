@@ -39,21 +39,29 @@ function formatDuration(duration) {
 
     return parts.join(' ');
 }
+const recentJoins = new Map(); // Хранит время присоединения участников
+
 // Функция для проверки условий анти-рейда
 async function checkAntiRaidConditions(member, banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse) {
     const guild = member.guild;
-    const memberCount = guild.memberCount;
     let logChannel;
 
     // Определяем, какой лог-канал использовать
     if (banLogChannelNameUse) {
-        logChannel = guild.channels.cache?.find(ch => ch.name === banLogChannelName);
+        logChannel = guild.channels.cache.find(ch => ch.name === banLogChannelName);
     } else {
-        logChannel = guild.channels.cache?.find(ch => ch.name === logChannelName);
+        logChannel = guild.channels.cache.find(ch => ch.name === logChannelName);
     }
 
+    const now = Date.now();
+    const joinTime = now; // Время, когда пользователь присоединился
+    recentJoins.set(member.id, joinTime); // Сохраняем время присоединения
+
     // Условие 1: Если на сервер заходит 25 человек за 2 минуты
-    if (memberCount >= 25) {
+    const twoMinutesAgo = now - 2 * 60 * 1000; // Время 2 минуты назад
+    const recentMembers = [...recentJoins.entries()].filter(([id, time]) => time >= twoMinutesAgo);
+
+    if (recentMembers.length >= 25) {
         const role = guild.roles.cache.find(r => r.name === banRoleName);
         if (role) {
             await member.roles.add(role);
@@ -65,11 +73,13 @@ async function checkAntiRaidConditions(member, banRoleName, logChannelName, banL
     }
 
     // Условие 2: Если аккаунту пользователя меньше 30 минут
-    const accountAge = (Date.now() - member.user.createdTimestamp) / 1000 / 60; // Возраст аккаунта в минутах
+    const accountAge = (now - member.user.createdTimestamp) / 1000 / 60; // Возраст аккаунта в минутах
     if (accountAge < 30) {
         try {
             await member.send('Ваш аккаунт слишком молодой. Пожалуйста, зайдите позже.');
-        } catch {}
+        } catch (error) {
+            console.error(`Не удалось отправить сообщение пользователю ${member.user.tag}: ${error}`);
+        }
 
         await member.kick('Молодой аккаунт');
         console.log(`Пользователь ${member.user.tag} был кикнут за молодой аккаунт.`);
@@ -96,6 +106,7 @@ async function checkAntiRaidConditions(member, banRoleName, logChannelName, banL
         }
     }
 }
+
 // Функция для выдачи роли "Новичок"
 async function assignNewMemberRole(member, newMemberRoleName) {
     let role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
@@ -574,6 +585,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'controlRoleName':
         case 'creativeRoleName':
         case 'weddingsLogChannelName':
+
             if (typeof value !== 'string' || value.length === 0) {
                 isValid = false;
                 errorMessage = i18next.t(`settings-js_logchannel_error`, { settingKey });
@@ -774,7 +786,7 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'requisitionLogChannelName', name: i18next.t('settings-js_buttons_name_47'), value: String(config.requisitionLogChannelName) },
         { key: 'requisitionLogChannelNameUse', name: i18next.t('settings-js_buttons_name_48'), value: config.requisitionLogChannelNameUse === 1 ? '✅' : '❌' },
 
-
+        
     ];
 
 

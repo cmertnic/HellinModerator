@@ -253,6 +253,7 @@
     "settings-js_buttons_name_46": "use of the channel for wedding logs (true or false)",
     "settings-js_buttons_name_47": "request log channel",
     "settings-js_buttons_name_48": "use channel for request logs (true or false)",
+    "settings-js_buttons_name_49": "names of roles that can use staffmanegement ",
     "settings-js_enter_new_value": "enter a new value for setting {{settingKey}}:",
     "settings-js_times_is_up": "the timeout expired or an error occurred. Try again.",
     "settings-js_description": "settings",
