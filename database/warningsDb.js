@@ -100,21 +100,6 @@ async function getExpiredWarnings(robot, guildId) {
     });
 }
 
-// Асинхронная функция для получения всех активных предупреждений
-async function getAllActiveWarnings(guildId) {
-    const currentTime = Date.now();
-
-    return new Promise((resolve, reject) => {
-        warningsDb.all(`SELECT * FROM warnings WHERE duration > ? AND guildId = ?`, [currentTime, guildId], (err, rows) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
-}
-
 // Функция для удаления предупреждения из базы данных
 async function removeWarningFromDatabase(robot, guildId, userId) {
     return new Promise((resolve, reject) => {
@@ -124,6 +109,7 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
             ORDER BY duration DESC
             LIMIT 1
         )`;
+        
         warningsDb.run(query, [userId, guildId], async function (err) {
             if (err) {
                 console.error(`Ошибка при удалении предупреждения: ${err.message}`);
@@ -143,20 +129,26 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
                 // Оповещение об успешном удалении предупреждения
                 if (robot) {
                     const guild = robot.guilds.cache.get(guildId);
+                    let member;
                     try {
-                        const member = await guild.members.fetch(userId);
-                        if (member && member.permissions.has(PermissionsBitField.Flags.SendMessages)) {
-                            const message = i18next.t('warningsDb-js_removeMuteFromDatabase_member_send');
-                            await member.send(message).catch(console.error);
-                        }
+                        member = await guild.members.fetch(userId);
                     } catch (error) {
-                        console.error('Ошибка: Не удалось получить участника:', error);
+                        if (error.code === 10007) {
+                            await removeUserMuteFromDatabase(guildId, userId); // Удаляем информацию о пользователе
+                            return; // Выход из функции, если участник не найден
+                        } 
+                    }
+
+                    if (member && member.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+                        const message = i18next.t('warningsDb-js_removeMuteFromDatabase_member_send');
+                        await member.send(message).catch(console.error);
                     }
                 }
             }
         });
     });
 }
+
 
 // Функция для удаления данных о пользователе из базы данных
 async function removeUserWarningsFromDatabase(guildId, userId) {
@@ -229,15 +221,14 @@ async function removeExpiredWarnings(robot, guildId) {
             try {
                 member = await guild.members.fetch(warning.userId);
             } catch (error) {
-                console.error(`- Ошибка: Пользователь с ID ${warning.userId} не найден на сервере.`);
-                await removeUserWarningsFromDatabase(guildId, warning.userId);
-                continue;
-            }
-
-            const warningsCount = await getWarningsCount(warning.userId);
-            if (warningsCount === 0) {
-                console.error(`- Ошибка: Предупреждение для пользователя с ID ${warning.userId} не найдено.`);
-                continue;
+                if (error.code === 10007) {
+                    // Если пользователь не найден, удаляем предупреждение из базы данных
+                    console.warn(`Пользователь с ID ${warning.userId} не найден в гильдии. Удаляем предупреждение из базы данных.`);
+                    await removeUserWarningsFromDatabase(guildId, warning.userId);
+                    continue; // Пропускаем этот предупреждение
+                }
+                console.error(`Ошибка при получении участника: ${error}`);
+                continue; // Пропускаем этот предупреждение
             }
 
             await removeWarningFromDatabase(robot, guildId, warning.userId);
@@ -255,6 +246,5 @@ module.exports = {
     getExpiredWarnings,
     removeWarningFromDatabase,
     removeExpiredWarnings,
-    getWarningsCount,
-    getAllActiveWarnings
+    getWarningsCount
 };

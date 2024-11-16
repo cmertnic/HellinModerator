@@ -57,7 +57,6 @@ async function checkAntiRaidConditions(member, banRoleName, logChannelName, banL
         const role = guild.roles.cache.find(r => r.name === banRoleName);
         if (role) {
             await member.roles.add(role);
-            console.log(`Роль ${banRoleName} выдана пользователю ${member.user.tag} из-за рейда.`);
             // Логируем назначение роли
             if (logChannel) {
                 await logChannel.send(`Пользователю ${member.user.tag} была назначена роль "${banRoleName}" из-за рейда (25 участников за 2 минуты).`);
@@ -90,7 +89,6 @@ async function checkAntiRaidConditions(member, banRoleName, logChannelName, banL
         const role = guild.roles.cache.find(r => r.name === banRoleName);
         if (role) {
             await member.roles.add(role);
-            console.log(`Роль ${banRoleName} выдана пользователю ${member.user.tag} за совпадение с ${similarNames.length} пользователями.`);
             // Логируем назначение роли
             if (logChannel) {
                 await logChannel.send(`Пользователю ${member.user.tag} была назначена роль "${banRoleName}" за совпадение с ${similarNames.length} пользователями.`);
@@ -107,7 +105,6 @@ async function assignNewMemberRole(member, newMemberRoleName) {
     if (role) {
         // Выдаем роль пользователю
         await member.roles.add(role);
-        console.log(`Роль "${newMemberRoleName}" выдана пользователю ${member.user.tag}`);
     } else {
         // Если роль не найдена, создаем ее
         const roleCreationMessages = await ensureRolesExist(member.guild, newMemberRoleName);
@@ -117,7 +114,6 @@ async function assignNewMemberRole(member, newMemberRoleName) {
             role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
             if (role) {
                 await member.roles.add(role);
-                console.log(`Роль "${newMemberRoleName}" выдана пользователю ${member.user.tag} после создания.`);
             }
         }
     }
@@ -376,9 +372,14 @@ async function getOrCreateVoiceChannel(guild, channelName, botMember) {
         }
     }
 }
-// Функция для создания побочных каналов логирования
-async function createLogChannel(interaction, channelName, botMember, higherRoles) {
-    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
+// Функция для создания лог-канала
+async function createLogChannel(guild, channelName, botMember, higherRoles, serverSettings) {
+    if (!guild) {
+        console.error('Guild is undefined in createLogChannel.');
+        return 'Ошибка: Гильдия не найдена.';
+    }
+
+    const result = await getOrCreateLogChannel(guild, channelName, botMember, higherRoles);
     if (result) {
         if (result.created) {
             return i18next.t('events-js_logChannel_create', { channelName: channelName, createdChannelName: result.channel.name });
@@ -622,6 +623,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'helpLogChannelNameUse':
         case 'applicationsLogChannelNameUse':
         case 'weddingsLogChannelNameUse':
+        case 'randomRoomNameUse':    
             if (value !== '1' && value !== '0') {
                 isValid = false;
                 errorMessage = i18next.t(`settings-js_trueFalse_err`, { settingKey });
@@ -766,6 +768,7 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'applicationsLogChannelName', name: i18next.t('settings-js_buttons_name_35'), value: String(config.applicationsLogChannelName) },
         { key: 'applicationsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_36'), value: config.applicationsLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'randomRoomName', name: i18next.t('settings-js_buttons_name_37'), value: String(config.randomRoomName) },
+        { key: 'randomRoomNameUse', name: i18next.t('settings-js_buttons_name_37_2'), value: String(config.randomRoomName) },
         { key: 'loversRoleName', name: i18next.t('settings-js_buttons_name_38'), value: String(config.loversRoleName) },
         { key: 'supportRoleName', name: i18next.t('settings-js_buttons_name_39'), value: String(config.supportRoleName) },
         { key: 'podkastRoleName', name: i18next.t('settings-js_buttons_name_40'), value: String(config.podkastRoleName) },
@@ -775,6 +778,9 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'creativeRoleName', name: i18next.t('settings-js_buttons_name_44'), value: String(config.creativeRoleName) },
         { key: 'weddingsLogChannelName', name: i18next.t('settings-js_buttons_name_45'), value: String(config.weddingsLogChannelName) },
         { key: 'weddingsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_46'), value: config.weddingsLogChannelNameUse === 1 ? '✅' : '❌' },
+        { key: 'requisitionLogChannelName', name: i18next.t('settings-js_buttons_name_47'), value: String(config.requisitionLogChannelName) },
+        { key: 'requisitionLogChannelNameUse', name: i18next.t('settings-js_buttons_name_48'), value: config.requisitionLogChannelNameUse === 1 ? '✅' : '❌' },
+
 
     ];
 
@@ -865,18 +871,18 @@ async function ensureRolesExist(guild, roleName) {
 
     if (!role) {
         try {
+            // Генерируем случайный цвет
+            const randomColor = Math.floor(Math.random() * 16777215); // Генерация случайного числа от 0 до 16777215 (0xFFFFFF)
+
             role = await guild.roles.create({
                 name: roleName,
-                color: 0x0000FF, // Синий цвет
-                reason: 'Создание роли "Новичок" для новых участников'
+                color: randomColor, // Используем случайный цвет
+                reason: `Создание роли "${roleName}" для новых участников`
             });
-            console.log(`Роль "${roleName}" успешно создана.`);
         } catch (error) {
             console.error(`Ошибка при создании роли "${roleName}": ${error.message}`);
             return null; // Возвращаем null, если произошла ошибка
         }
-    } else {
-        console.log(`Роль "${roleName}" уже существует.`);
     }
 
     return role;
