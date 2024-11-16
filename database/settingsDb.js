@@ -1,23 +1,21 @@
-// Подключаем модуль dotenv для загрузки переменных окружения из файла .env
+// Подключаем необходимые модули
 const dotenv = require('dotenv');
-dotenv.config();
-
-// Подключаем модуль path для работы с путями файлов
 const path = require('path');
-
-// Подключаем модуль sqlite3 для работы с базой данных SQLite
 const sqlite3 = require('sqlite3').verbose();
 
-// Проверяем, что переменная окружения SQLITE_SETTINGS_DB_PATH определена
+// Загружаем переменные окружения из файла .env
+dotenv.config();
+
+// Проверяем наличие переменной окружения SQLITE_SETTINGS_DB_PATH
 if (!process.env.SQLITE_SETTINGS_DB_PATH) {
   console.error('Переменная окружения SQLITE_SETTINGS_DB_PATH не определена.');
   process.exit(1);
 }
 
-// Получаем путь к базе данных из переменной окружения SQLITE_SETTINGS_DB_PATH
+// Получаем путь к базе данных из переменной окружения
 const dbPath = path.resolve(process.env.SQLITE_SETTINGS_DB_PATH);
 
-// Создаем новое подключение к базе данных с флагами OPEN_READWRITE и OPEN_CREATE
+// Создаем новое подключение к базе данных
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
   if (err) {
     console.error(`Ошибка при подключении к базе данных: ${err.message}`);
@@ -75,7 +73,7 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
     randomRoomNameUse BOOLEAN,
     loversRoleName TEXT,  
     weddingsLogChannelName TEXT,  
-    weddingsLogChannelNameUse BOOLEAN,
+    weddingsLogChannelNameUse BOOLEAN,  
     requisitionLogChannelName TEXT,  
     requisitionLogChannelNameUse TEXT  
 );`, (err) => {
@@ -84,6 +82,8 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
     process.exit(1);
   }
 });
+
+// Функции для работы с настройками сервера
 
 // Функция для сохранения настроек сервера в базе данных
 function saveServerSettings(guildId, settings) {
@@ -103,18 +103,15 @@ function saveServerSettings(guildId, settings) {
     } = settings;
 
     db.run(`REPLACE INTO server_settings
-        (guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice,
-        warningLogChannelName, warningLogChannelNameUse, warningDuration, maxWarnings, warningsNotice,
-        banLogChannelName, banLogChannelNameUse, deletingMessagesFromBannedUsers, kickLogChannelName,
-        kickLogChannelNameUse, reportLogChannelName, reportLogChannelNameUse, clearLogChannelName,
-        clearLogChannelNameUse, clearNotice, logChannelName, language, automod, NotAutomodChannels,
-        automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
+        (guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice, warningLogChannelName, warningLogChannelNameUse, warningDuration,
+        maxWarnings, warningsNotice, banLogChannelName, banLogChannelNameUse, deletingMessagesFromBannedUsers, kickLogChannelName, kickLogChannelNameUse,
+        reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language,
+        automod, NotAutomodChannels, automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
         helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
         podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,
         applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
-        loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse, requisitionLogChannelName,
-        requisitionLogChannelNameUse)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`,
+        loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice,
         warningLogChannelName, warningLogChannelNameUse, warningDuration, maxWarnings, warningsNotice,
@@ -152,10 +149,8 @@ async function getServerSettings(guildId) {
   });
 }
 
-
-
 // Функция для инициализации настроек сервера по умолчанию
-async function initializeDefaultServerSettings(guildId, allGuildIds) {
+async function initializeDefaultServerSettings(guildId) {
   try {
     const settings = await getServerSettings(guildId);
     if (!settings.logChannelName) {

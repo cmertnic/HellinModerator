@@ -57,7 +57,7 @@ async function saveWarningToDatabase(interaction, userIdToWarn, durationMs, reas
     if (!interaction || !interaction.guild || !interaction.guild.id) {
         throw new Error('Не предоставлен объект interaction с необходимыми свойствами');
     }
-    
+
     const serverSettings = await getServerSettings(interaction.guild.id);
     const warningDuration = serverSettings.warningDuration || 3600000;
 
@@ -134,7 +134,7 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
                         member = await guild.members.fetch(userId);
                     } catch (error) {
                         if (error.code === 10007) {
-                            await removeUserMuteFromDatabase(guildId, userId); // Удаляем информацию о пользователе
+                            await removeUserWarningsFromDatabase(guildId, userId); // Удаляем информацию о пользователе
                             return; // Выход из функции, если участник не найден
                         } 
                     }
@@ -148,7 +148,6 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
         });
     });
 }
-
 
 // Функция для удаления данных о пользователе из базы данных
 async function removeUserWarningsFromDatabase(guildId, userId) {
@@ -200,13 +199,15 @@ async function removeExpiredWarnings(robot, guildId) {
             const higherRoles = guild.roles.cache.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
             const logChannelCreationResult = await createLogChannel(robot, guild, channelNameToCreate, botMember, higherRoles, serverSettings);
 
-            if (logChannelCreationResult.startsWith('Ошибка')) {
+            if (!logChannelCreationResult || !logChannelCreationResult.channel) {
                 console.error(`Ошибка при создании канала: ${logChannelCreationResult}`);
+                return; // Прерываем выполнение, если канал не был создан
             }
 
-            logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+            logChannel = logChannelCreationResult.channel; // Используем созданный канал
         } catch (error) {
             console.error('Ошибка при создании канала:', error);
+            return; // Прерываем выполнение в случае ошибки
         }
     }
 
@@ -222,13 +223,11 @@ async function removeExpiredWarnings(robot, guildId) {
                 member = await guild.members.fetch(warning.userId);
             } catch (error) {
                 if (error.code === 10007) {
-                    // Если пользователь не найден, удаляем предупреждение из базы данных
-                    console.warn(`Пользователь с ID ${warning.userId} не найден в гильдии. Удаляем предупреждение из базы данных.`);
                     await removeUserWarningsFromDatabase(guildId, warning.userId);
-                    continue; // Пропускаем этот предупреждение
+                    continue; // Пропускаем это предупреждение
                 }
                 console.error(`Ошибка при получении участника: ${error}`);
-                continue; // Пропускаем этот предупреждение
+                continue; // Пропускаем это предупреждение
             }
 
             await removeWarningFromDatabase(robot, guildId, warning.userId);

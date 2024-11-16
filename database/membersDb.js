@@ -120,7 +120,6 @@ async function removeStaleMembers(guild) {
                 console.error('Ошибка при удалении устаревших участников:', err.message);
                 reject(err);
             } else {
-                console.log(`Удалено ${this.changes} устаревших записей участников из базы данных.`);
                 resolve();
             }
         });

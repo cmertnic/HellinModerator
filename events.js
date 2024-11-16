@@ -96,8 +96,6 @@ async function checkAntiRaidConditions(member, banRoleName, logChannelName, banL
         }
     }
 }
-
-
 // Функция для выдачи роли "Новичок"
 async function assignNewMemberRole(member, newMemberRoleName) {
     let role = member.guild.roles.cache.find(r => r.name === newMemberRoleName);
@@ -372,14 +370,9 @@ async function getOrCreateVoiceChannel(guild, channelName, botMember) {
         }
     }
 }
-// Функция для создания лог-канала
-async function createLogChannel(guild, channelName, botMember, higherRoles, serverSettings) {
-    if (!guild) {
-        console.error('Guild is undefined in createLogChannel.');
-        return 'Ошибка: Гильдия не найдена.';
-    }
-
-    const result = await getOrCreateLogChannel(guild, channelName, botMember, higherRoles);
+// Функция для создания побочных каналов логирования
+async function createLogChannel(interaction, channelName, botMember, higherRoles) {
+    const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
     if (result) {
         if (result.created) {
             return i18next.t('events-js_logChannel_create', { channelName: channelName, createdChannelName: result.channel.name });
@@ -623,7 +616,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'helpLogChannelNameUse':
         case 'applicationsLogChannelNameUse':
         case 'weddingsLogChannelNameUse':
-        case 'randomRoomNameUse':    
+        case 'randomRoomNameUse':
             if (value !== '1' && value !== '0') {
                 isValid = false;
                 errorMessage = i18next.t(`settings-js_trueFalse_err`, { settingKey });
@@ -887,6 +880,7 @@ async function ensureRolesExist(guild, roleName) {
 
     return role;
 }
+
 // Отдельная функция для обработки выбора из выпадающего меню help
 async function handleSelectInteraction(helpChannel, selectInteraction, questionUser, questionContent) {
     try {
@@ -1008,4 +1002,5 @@ module.exports = {
     checkAntiRaidConditions,
     assignNewMemberRole,
     ensureRolesExist
+
 };

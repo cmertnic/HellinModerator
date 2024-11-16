@@ -2,19 +2,18 @@
 require('dotenv').config();
 
 // Импортируем необходимые модули
-const { Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events, Client, GatewayIntentBits, Partials } = require('discord.js');
+const { Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
-const { initializeDefaultServerSettings, getServerSettings } = require('./database/settingsDb');
-const { getAllMemberIds, updateMembersInfo } = require('./database/membersDb');
+const { initializeDefaultServerSettings, getServerSettings, } = require('./database/settingsDb');
+const { getAllMemberIds, updateMembersInfo, removeStaleMembers } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
-const { removeExpiredMutes, removeUserMuteFromDatabase } = require('./database/mutesDb');
-const { initializeI18next } = require('./i18n');
-const { createLogChannel, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
-
+const { removeExpiredMutes } = require('./database/mutesDb');
+const { initializeI18next, i18next, t } = require('./i18n');
+const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
-let badLinks = [];
+let bad_links = [];
 
 // Загружаем черный список и плохие ссылки из файлов
 async function loadBlacklistAndBadLinks() {
@@ -24,11 +23,11 @@ async function loadBlacklistAndBadLinks() {
       fs.promises.readFile('bad_links.txt', 'utf8'),
     ]);
 
-    blacklist = blacklistData.trim().split('\n').map(word => word.trim());
-    badLinks = badLinksData.trim().split('\n').map(link => link.trim());
+    blacklist = blacklistData.trim().split('\n').map((word) => word.trim());
+    bad_links = badLinksData.trim().split('\n').map((link) => link.trim());
 
     console.log(`Загружено ${blacklist.length} слов в черный список.`);
-    console.log(`Загружено ${badLinks.length} плохих ссылок.`);
+    console.log(`Загружено ${bad_links.length} ссылок в плохие ссылки.`);
   } catch (err) {
     console.error('Ошибка при загрузке черного списка и плохих ссылок:', err);
   }
@@ -38,7 +37,7 @@ async function loadBlacklistAndBadLinks() {
 async function initializeLocalizationForServer(guildId) {
   try {
     const serverSettings = await getServerSettings(guildId);
-    const serverLanguage = serverSettings.language || 'eng'; // Устанавливаем язык по умолчанию
+    const serverLanguage = serverSettings.language;
     await initializeI18next(serverLanguage);
   } catch (error) {
     console.error('Ошибка при инициализации локализации:', error);
@@ -49,12 +48,14 @@ async function initializeLocalizationForServer(guildId) {
 const commands = [];
 const guildsData = new Map();
 const rest = new REST().setToken(process.env.TOKEN);
-const userMessageHistory = new Map(); // Хранилище для истории сообщений пользователей
 
 // Загружаем и регистрируем команды
 (async () => {
   await initializeI18next('eng');
   try {
+    // Создаем экземпляр клиента Discord
+    const { Client, GatewayIntentBits, Partials } = require('discord.js');
+
     const robot = new Client({
       intents: [
         GatewayIntentBits.Guilds,
@@ -120,9 +121,11 @@ const userMessageHistory = new Map(); // Хранилище для истори�
       guildsData.set(guild.id, defaultSettings);
       console.log(`Данные гильдии инициализированы для ID: ${guild.id}`);
     });
+    // Обработка выбора роли
+    const selectedRoles = []; // Массив для хранения выбранных ролей
 
     robot.on('ready', async () => {
-      console.log(`${robot.user.username} готов к работе`);
+      console.log(`${robot.user.username} готов вкалывать`);
       const guilds = robot.guilds.cache;
 
       for (const guild of guilds.values()) {
@@ -137,6 +140,7 @@ const userMessageHistory = new Map(); // Хранилище для истори�
           }
 
           await initializeLocalizationForServer(guildId);
+
           guildsData.set(guildId, serverSettings);
 
         } catch (error) {
@@ -159,6 +163,7 @@ const userMessageHistory = new Map(); // Хранилище для истори�
       if (!interaction.isCommand()) return;
 
       const command = robot.commands.get(interaction.commandName);
+
       if (!command) {
         await interaction.reply({ content: 'Команда не найдена!', ephemeral: true });
         return;
@@ -166,12 +171,17 @@ const userMessageHistory = new Map(); // Хранилище для истори�
 
       try {
         let serverLanguage = 'eng';
+
         if (interaction.guild) {
+          // Получаем настройки сервера для языка
           const guildId = interaction.guild.id;
           const serverSettings = await getServerSettings(guildId);
-          serverLanguage = serverSettings.language || 'eng';
+          serverLanguage = serverSettings.language || 'rus';
         }
+
+        // Обновляем язык для команды
         await initializeI18next(serverLanguage);
+
         console.log(`Выполнение команды: ${interaction.commandName}`);
         await command.execute(robot, interaction);
       } catch (error) {
@@ -179,20 +189,21 @@ const userMessageHistory = new Map(); // Хранилище для истори�
         await interaction.reply({ content: 'Произошла ошибка при выполнении команды!', ephemeral: true });
       }
     });
-
-    // Обработка новых участников
+    // Событие при добавлении нового участника на сервер
     robot.on('guildMemberAdd', async (member) => {
       try {
         const serverSettings = await getServerSettings(member.guild.id);
-        const { banRoleName, newMemberRoleName } = serverSettings;
+        const { banRoleName, newMemberRoleName, logChannelName, banLogChannelName, banLogChannelNameUse } = serverSettings;
 
-        const antiRaidResult = await checkAntiRaidConditions(member, banRoleName);
+        // Проверяем условия анти-рейда
+        const antiRaidResult = await checkAntiRaidConditions(member, banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse);
         if (antiRaidResult) {
           console.log(`Защита от рейдов: ${antiRaidResult}`);
         } else {
           console.log(`Участник ${member.user.tag} прошел проверку защиты от рейдов.`);
         }
 
+        // Выдаем роль новому участнику
         await assignNewMemberRole(member, newMemberRoleName);
       } catch (error) {
         console.error(`Ошибка при обработке нового участника ${member.user.tag}: ${error.message}`);
@@ -201,7 +212,7 @@ const userMessageHistory = new Map(); // Хранилище для истори�
 
     robot.on('messageCreate', async (message) => {
       if (!message.guild || message.author.bot) return;
-
+    
       const serverSettings = await getServerSettings(message.guild.id);
       const {
         uniteAutomodBlacklists,
@@ -212,78 +223,107 @@ const userMessageHistory = new Map(); // Хранилище для истори�
         logChannelName,
         NotAutomodChannels,
       } = serverSettings;
-
+    
       if (!automod) return;
-
+    
       const NotAutomodChannelsSet = new Set(NotAutomodChannels?.split(',') || []);
-
+    
       if (NotAutomodChannelsSet.has(message.channel.name)) return;
-
+    
       const botMember = await message.guild.members.fetch(robot.user.id);
       const authorMember = await message.guild.members.fetch(message.author.id);
       const mess_value = message.content.toLowerCase();
-
+    
       if (botMember.roles.highest.position <= authorMember.roles.highest.position) return;
-
+    
       let logChannel = message.guild.channels.cache.find((channel) => channel.name === logChannelName);
-
+    
       if (!logChannel) {
         const channelNameToCreate = logChannelName;
         const higherRoles = [...message.guild.roles.cache.values()].filter((role) => botMember.roles.highest.position < role.position);
         const logChannelCreationResult = await createLogChannel(message, channelNameToCreate, botMember, higherRoles);
-
+    
         if (logChannelCreationResult.startsWith('Ошибка')) {
           console.error(logChannelCreationResult);
           return;
         }
-
+    
         logChannel = message.guild.channels.cache.find((ch) => ch.name === channelNameToCreate);
       }
-
+    
       let blacklistToUse, bad_linksToUse;
-
+    
       if (uniteAutomodBlacklists && automodBlacklist !== 'fuck') {
         blacklistToUse = [...new Set([...(automodBlacklist || '').split(','), ...blacklist])];
       } else {
         blacklistToUse = [...(automodBlacklist || '').split(',')];
       }
-
+    
       if (uniteAutomodBadLinks && automodBadLinks !== 'azino777cashcazino-slots.ru') {
         bad_linksToUse = [...new Set([...(automodBadLinks || '').split(','), ...bad_links])];
       } else {
         bad_linksToUse = [...(automodBadLinks || '').split(',')];
       }
-
+    
       // Проверяем черный список и плохие ссылки
       for (const item of [...blacklistToUse, ...bad_linksToUse]) {
         if (mess_value.includes(item)) {
           await message.delete();
-
+    
           const embed = new EmbedBuilder()
-            .setTitle(i18next.t('bot-js_delete_message'))
-            .setDescription(i18next.t(`bot-js_delete_${item_type}_logchanel`, { mess_author: message.author.id, item_type: item_type }))
+            .setTitle('Сообщение удалено')
+            .setDescription(`Сообщение пользователя <@${message.author.id}> было удалено из-за содержания запрещенного слова: ${item}`)
             .addFields(
-              { name: i18next.t('bot-js_delete_message_value', { message_content: message.content }), value: '\u200B' },
-              { name: i18next.t(`bot-js_reason_${item_type}`, { item: item }), value: `${item}` }
+              { name: 'Содержимое сообщения:', value: message.content, inline: false },
+              { name: 'Причина:', value: `Запрещенное слово: ${item}`, inline: false }
             )
             .setTimestamp();
-
+    
           try {
             await logChannel.send({ embeds: [embed] });
           } catch (error) {
             console.error('Ошибка при отправке сообщения в канал журнала:', error);
           }
-
+    
           try {
-            await message.author.send(i18next.t(`bot-js_delete_${item_type}_user`, { item: item }));
+            await message.author.send('Ваше сообщение было удалено из-за содержания запрещенного слова: ' + item);
           } catch (error) {
             console.error('Ошибка при отправке сообщения пользователю:', error);
           }
-
+    
           return;
         }
       }
+    
+      // Проверка на наличие Discord-ссылок
+      const discordLinkRegex = /(https?:\/\/)?(www\.)?(discord\.gg|discordapp\.com|discord\.com)\/[^\s]+/i;
+      if (discordLinkRegex.test(mess_value)) {
+        await message.delete();
+    
+        const embed = new EmbedBuilder()
+          .setTitle('Сообщение удалено')
+          .setDescription(`Сообщение пользователя <@${message.author.id}> было удалено из-за ссылки на Discord.`)
+          .addFields(
+            { name: 'Содержимое сообщения:', value: message.content, inline: false },
+            { name: 'Причина:', value: 'Ссылка на Discord', inline: false }
+          )
+          .setTimestamp();
+    
+        try {
+          await logChannel.send({ embeds: [embed] });
+        } catch (error) {
+          console.error('Ошибка при отправке сообщения в канал журнала:', error);
+        }
+    
+        try {
+          await message.author.send('Ваше сообщение было удалено за содержание ссылки на Discord.');
+        } catch (error) {
+          console.error('Ошибка при отправке сообщения пользователю:', error);
+        }
+      }
     });
+
+
 
     const chosenRoles = []; // Массив для хранения выбранных ролей
     let selectedRole; // Переменная для хранения последней выбранной роли
@@ -297,38 +337,38 @@ const userMessageHistory = new Map(); // Хранилище для истори�
           await interaction.reply({ content: 'Ошибка: не удалось получить выбранную роль.', ephemeral: true });
           return;
         }
-    
+
         selectedRole = interaction.values[0]; // Сохраняем выбранную роль
-    
+
         // Добавляем выбранную роль в массив
         chosenRoles.push(selectedRole);
-    
+
         const modal = new ModalBuilder()
           .setCustomId('staffModal')
           .setTitle('Форма заявки на роль');
-    
+
         const textInput = new TextInputBuilder()
           .setCustomId('textInput')
           .setLabel('Ваше ФИО и возраст')
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setPlaceholder('Зубенко Михаил Петрович, 120');
-    
+
         const actionRow = new ActionRowBuilder().addComponents(textInput);
         modal.addComponents(actionRow);
-    
+
         // Общие дополнительные вопросы для всех ролей
         const additionalQuestions = [
           { id: 'experience', label: 'Работали ли вы уже на серверах?', placeholder: 'Да, в Haru я там был крутым админом ....' },
           { id: 'time', label: 'Какой у вас часовой пояс?', placeholder: 'GMT +3' },
           { id: 'motivation', label: 'Почему вы хотите стать частью команды?', placeholder: 'Я крутой, могу не спать 18 часов подряд' }
         ];
-    
+
         // Добавляем специфические вопросы для роли "Ведущий"
         if (selectedRole === 'role5') {
           additionalQuestions.unshift({ id: 'microphoneModel', label: 'Какую модель микрофона вы используете?', placeholder: 'Razer' });
         }
-    
+
         // Добавляем дополнительные вопросы в модальное окно
         additionalQuestions.forEach(question => {
           const additionalInput = new TextInputBuilder()
@@ -337,31 +377,31 @@ const userMessageHistory = new Map(); // Хранилище для истори�
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
             .setPlaceholder(question.placeholder);
-    
+
           const additionalActionRow = new ActionRowBuilder().addComponents(additionalInput);
           modal.addComponents(additionalActionRow);
         });
-    
+
         await interaction.showModal(modal);
       }
-    
+
       // Обработка отправки модального окна
       if (interaction.customId === 'staffModal') {
         try {
           const userInput = interaction.fields.getTextInputValue('textInput');
-    
+
           // Получаем выбранные роли
           const selectedRoleLabels = chosenRoles.map(role => {
             const option = interaction.message.components[0].components[0].options.find(opt => opt.value === role);
             return option ? option.label : null;
           }).filter(label => label !== null);
-    
+
           if (selectedRoleLabels.length === 0) {
             console.error('Ошибка: выбранные роли не найдены.');
             await interaction.reply({ content: 'Ошибка: выбранные роли не найдены.', ephemeral: true });
             return;
           }
-    
+
           // Получаем ответы на дополнительные вопросы
           const additionalInputs = {
             microphoneModel: selectedRole === 'role5' ? interaction.fields.getTextInputValue('microphoneModel') : 'Не указано',
@@ -369,11 +409,11 @@ const userMessageHistory = new Map(); // Хранилище для истори�
             motivation: interaction.fields.getTextInputValue('motivation') || 'Не указано',
             time: interaction.fields.getTextInputValue('time') || 'Не указано'
           };
-    
+
           // Получаем настройки сервера
           const serverSettings = await getServerSettings(interaction.guild.id);
           const { logChannelName, requisitionLogChannelNameUse, requisitionLogChannelName } = serverSettings;
-    
+
           // Ищем лог-канал по настройкам
           let logChannel;
           if (requisitionLogChannelNameUse) {
@@ -381,27 +421,27 @@ const userMessageHistory = new Map(); // Хранилище для истори�
           } else {
             logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName && ch.type === 'GUILD_TEXT');
           }
-    
+
           // Если канал не найден, создаем его
           if (!logChannel) {
             const channelNameToCreate = requisitionLogChannelName || logChannelName;
             const botMember = interaction.guild.members.cache.get(interaction.client.user.id);
             const roles = interaction.guild.roles.cache;
             const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-    
+
             const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles);
-    
+
             if (logChannelCreationResult.startsWith('Ошибка')) {
               return interaction.reply({ content: logChannelCreationResult, ephemeral: true });
             }
-    
+
             logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
           }
-    
+
           // Отправляем сообщение в лог-канал
           if (logChannel) {
             const userMention = `<@${interaction.user.id}>`; // Упоминание пользователя
-    
+
             await logChannel.send(`**Новая заявка на роль:** ${selectedRoleLabels.join(', ')}\n` +
               `**Имя пользователя:** ${userMention} (${userInput})\n\n` +
               `**Дополнительные вопросы:**\n` +
@@ -409,13 +449,12 @@ const userMessageHistory = new Map(); // Хранилище для истори�
               `📜 **Опыт:** ${additionalInputs.experience}\n` +
               `💬 **Мотивация:** ${additionalInputs.motivation}\n` +
               `🌍 **Часовой пояс:** ${additionalInputs.time}`);
-    
+
             await interaction.reply({ content: `Вы подали заявку на роли: ${selectedRoleLabels.join(', ')}\nВы ввели: ${userInput}\nДополнительные ответы: Модель микрофона: ${additionalInputs.microphoneModel}, Опыт: ${additionalInputs.experience}, Мотивация: ${additionalInputs.motivation}\nЧасовой пояс: ${additionalInputs.time}`, ephemeral: true });
           } else {
             console.error('Канал для заявок не найден.');
             await interaction.reply({ content: 'Ошибка: канал для заявок не найден.', ephemeral: true });
           }
-    
           chosenRoles.length = 0; // Очищаем массив выбранных ролей
           selectedRole = null; // Сбрасываем выбранную роль
         } catch (error) {
@@ -425,17 +464,16 @@ const userMessageHistory = new Map(); // Хранилище для истори�
       }
     });
 
-
     // Обработчик события voiceStateUpdate для перемещения пользователя
     robot.on("voiceStateUpdate", async (oldState, newState) => {
       try {
         // Проверяем, что новое состояние не равно null и что у нас есть доступ к гильдии
         if (!newState.channel || !newState.guild) return;
-    
+
         // Получаем настройки сервера
         const serverSettings = await getServerSettings(newState.guild.id);
-        const { logChannelName,randomRoomName, randomRoomNameUse } = serverSettings;
-    
+        const { logChannelName, randomRoomName, randomRoomNameUse } = serverSettings;
+
         // Ищем канал для логирования
         let logChannel;
         if (randomRoomNameUse) {
@@ -443,7 +481,7 @@ const userMessageHistory = new Map(); // Хранилище для истори�
         } else {
           logChannel = newState.guild.channels.cache.find(ch => ch.name === logChannelName);
         }
-    
+
         // Проверка наличия канала для логирования
         if (!logChannel) {
           const channelNameToCreate = weddingsLogChannelNameUse ? randomRoomName : logChannelName;
@@ -453,17 +491,17 @@ const userMessageHistory = new Map(); // Хранилище для истори�
           await createLogChannel(newState, channelNameToCreate, botMember, higherRoles, serverSettings);
           logChannel = newState.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
         }
-    
+
         // Проверяем, соответствует ли новое состояние комнате
         if (newState.channel.name === randomRoomName) {
           // Получаем все голосовые каналы на сервере
           const allVoiceChannels = newState.guild.channels.cache.filter(channel => channel.type === ChannelType.GuildVoice);
-    
+
           // Здесь вы можете задать свои критерии для выбора каналов
           const TARGET_CHANNELS = allVoiceChannels
             .filter(channel => channel.name.toLowerCase() !== randomRoomName.toLowerCase()) // Исключаем текущую комнату
             .map(channel => channel.name); // Получаем имена каналов
-    
+
           if (TARGET_CHANNELS.length > 0) {
             const randomChannelName = TARGET_CHANNELS[Math.floor(Math.random() * TARGET_CHANNELS.length)];
             const randomChannel = allVoiceChannels.find(channel => channel.name === randomChannelName);
@@ -478,27 +516,34 @@ const userMessageHistory = new Map(); // Хранилище для истори�
       }
     });
 
-    // Настройка cron-задач
     function setupCronJobs() {
       cron.schedule('*/2 * * * *', async () => {
         console.log('Запуск задачи по расписанию для удаления истекших предупреждений и мутов.');
         for (const guild of robot.guilds.cache.values()) {
           const guildId = guild.id;
           try {
+            // Получаем настройки сервера
             const serverSettings = await getServerSettings(guildId);
+
+            // Получаем ID всех участников
             const memberIds = await getAllMemberIds(guild);
+
+            // Обновляем информацию об участниках
             await updateMembersInfo(robot, guildId, memberIds);
+
+            // Удаляем устаревших участников из базы данных
+            await removeStaleMembers(guild);
+
+            // Удаление истекших предупреждений и мутов
             await removeExpiredWarnings(robot, guildId, serverSettings, memberIds);
             await removeExpiredMutes(robot, guildId);
-            for (const memberId of memberIds) {
-              await removeUserMuteFromDatabase(guildId, memberId);
-            }
           } catch (error) {
             console.error(`Ошибка при обработке сервера ${guildId}:`, error);
           }
         }
       });
     }
+
 
     setupCronJobs();
     robot.login(process.env.TOKEN);
