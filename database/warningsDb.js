@@ -2,7 +2,7 @@
 require('dotenv').config();
 // Импортируем необходимые модули
 const path = require('path');
-const { PermissionsBitField } = require('discord.js');
+const { PermissionsBitField,EmbedBuilder } = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const { getServerSettings } = require('../database/settingsDb');
 const { i18next } = require('../i18n');

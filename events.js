@@ -685,7 +685,8 @@ async function handleButtonInteraction(interaction, config, page) {
             'uniteAutomodBadLinks',
             'helpLogChannelNameUse',
             'applicationsLogChannelNameUse',
-            'weddingsLogChannelNameUse'
+            'weddingsLogChannelNameUse',
+            'randomRoomNameUse'
         ];
 
         if (booleanSettings.includes(settingKey)) {

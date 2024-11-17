@@ -7,7 +7,7 @@ const { saveServerSettings, getServerSettings } = require('../../database/settin
 // Функция для проверки существования необходимых ролей на сервере
 async function ensureRolesExist(interaction) {
     const serverSettings = await getServerSettings(interaction.guild.id);
-        const {loversRoleName} = serverSettings;
+    const { loversRoleName } = serverSettings;
     const rolesToCreate = [loversRoleName]; // Определяем роли для создания
     await createRoles(interaction, rolesToCreate); // Вызываем функцию для создания ролей
 }
@@ -21,7 +21,7 @@ module.exports = {
             .setName('user') // Опция для пользователя, которому делать предложение
             .setDescription('Пользователь, которому вы хотите сделать предложение') // Описание опции пользователя
             .setRequired(true)), // Сделать эту опцию обязательной
-    
+
     // Функция выполнения для обработки команды
     async execute(robot, interaction) {
         // Запретить использование команды ботами
@@ -34,10 +34,10 @@ module.exports = {
 
         // Проверить, была ли уже отправлена или отложена реакция на взаимодействие
         if (interaction.replied || interaction.deferred) {
-            return; 
+            return;
         }
         const serverSettings = await getServerSettings(interaction.guild.id);
-        const {loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse,logChannelName } = serverSettings;
+        const { loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse, logChannelName } = serverSettings;
         // Отложить ответ, чтобы подтвердить обработку команды
         await interaction.deferReply({ ephemeral: true });
 
@@ -52,7 +52,7 @@ module.exports = {
         }
 
         // Получить пользователя для предложения из опций команды
-        const userToMarry = interaction.options.getUser ('user');
+        const userToMarry = interaction.options.getUser('user');
         // Запретить само-предложения
         if (userToMarry.id === interaction.user.id) {
             return await interaction.editReply({ content: i18next.t('marry-js_self_proposal'), ephemeral: true });
@@ -102,29 +102,29 @@ module.exports = {
         const marryEmbed = new EmbedBuilder()
             .setColor(0x00FF00) // Установить цвет вложения
             .setTitle(i18next.t('marry-js_proposal_title')) // Заголовок вложения
-            .setDescription(i18next.t('marry-js_proposal_description', { user: interaction.user.username })) // Описание
-            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=') 
+            .setDescription(i18next.t('marry-js_proposal_description', { user: interaction.user.id })) // Описание
+            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
             .setTimestamp(); // Время для вложения
 
         const botMember = interaction.guild.members.me; // Получить участника бота
 
-       // Получение канала для логирования
-       let logChannel;
-       if (weddingsLogChannelNameUse) {
-           logChannel = interaction.guild.channels.cache.find(ch => ch.name === weddingsLogChannelName);
-       } else {
-           logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
-       }
+        // Получение канала для логирования
+        let logChannel;
+        if (weddingsLogChannelNameUse) {
+            logChannel = interaction.guild.channels.cache.find(ch => ch.name === weddingsLogChannelName);
+        } else {
+            logChannel = interaction.guild.channels.cache.find(ch => ch.name === logChannelName);
+        }
 
-       // Проверка наличия канала для логирования
-       if (!logChannel) {
-           const channelNameToCreate = weddingsLogChannelNameUse ? weddingsLogChannelName : logChannelName;
-           const roles = interaction.guild.roles.cache;
-           const botMember = interaction.guild.members.me;
-           const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-           await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
-           logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-       }
+        // Проверка наличия канала для логирования
+        if (!logChannel) {
+            const channelNameToCreate = weddingsLogChannelNameUse ? weddingsLogChannelName : logChannelName;
+            const roles = interaction.guild.roles.cache;
+            const botMember = interaction.guild.members.me;
+            const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+            await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
+            logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+        }
 
         // Отправить сообщение с предложением пользователю
         const proposalMessage = await userToMarry.send({ embeds: [marryEmbed], components: [row] }).catch(async err => {
@@ -137,7 +137,7 @@ module.exports = {
         });
 
         // Уведомить инициатора, что предложение было отправлено
-        await interaction.editReply({ content: i18next.t('marry-js_proposal_sent', { user: userToMarry.username }), ephemeral: true });
+        await interaction.editReply({ content: i18next.t('marry-js_proposal_sent', { user: userToMarry.id }), ephemeral: true });
 
         // Создать фильтр для коллектора ответов
         const filter = (i) => i.user.id === userToMarry.id;
@@ -149,51 +149,51 @@ module.exports = {
         // Собрать ответы на предложение
         collector.on('collect', async (i) => {
             await i.deferUpdate(); // Отложить обновление взаимодействия
-            
+
             let responseEmbed; // Вложение для ответа
-            
+
             // Обработать принятие предложения
             if (i.values[0] === 'accept') {
                 responseEmbed = new EmbedBuilder()
-                    .setColor(0x00FF00) // Установить цвет для принятия
-                    .setTitle(i18next.t('marry-js_proposal_accepted_title')) // Заголовок для принятия
-                    .setDescription(i18next.t('marry-js_proposal_accepted', { user1: interaction.user.username, user2: userToMarry.username })) // Описание для принятия
-                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=') // Изображение для принятия
-                    .setTimestamp(); // Время для вложения
-                
+                    .setColor(0x00FF00)
+                    .setTitle(i18next.t('marry-js_proposal_accepted_title'))
+                    .setDescription(i18next.t('marry-js_proposal_accepted', { user1: interaction.user.id, user2: userToMarry.id }))
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
+                    .setTimestamp();
+
                 // Залогировать принятие в лог-канале
                 if (logChannel) {
-                    await existingChannel.send({ embeds: [responseEmbed] });
+                    await logChannel.send({ embeds: [responseEmbed] });
                 }
 
                 // Добавить роль "женат" обоим участникам
                 await proposerMember.roles.add(marriedRole).catch(error => {
-                    console.error(`Ошибка при добавлении роли инициатору: ${error.message}`); // Лог ошибки
+                    console.error(`Ошибка при добавлении роли инициатору: ${error.message}`);
                 });
                 await receiverMember.roles.add(marriedRole).catch(error => {
-                    console.error(`Ошибка при добавлении роли получателю: ${error.message}`); // Лог ошибки
+                    console.error(`Ошибка при добавлении роли получателю: ${error.message}`);
                 });
-            } 
+            }
             // Обработать отклонение предложения
             else if (i.values[0] === 'decline') {
                 responseEmbed = new EmbedBuilder()
-                    .setColor(0xFF0000) // Установить цвет для отклонения
-                    .setTitle(i18next.t('marry-js_proposal_declined_title')) // Заголовок для отклонения
-                    .setDescription(i18next.t('marry-js_declined_message', { user: userToMarry.username })) // Описание для отклонения
-                    .setImage('https://media.discordapp.net/attachments/1304806409011200063/1305545882027950140/bd7317c5771b33d26df5774f4f2313b2.gif?ex=67336bda&is=67321a5a&hm=43cb738298a892c1a5a04544727db755d0f3fb8029aec44061d5151c38c0975a&=') // Изображение для отклонения
-                    .setTimestamp(); // Время для вложения
-                
+                    .setColor(0xFF0000)
+                    .setTitle(i18next.t('marry-js_proposal_declined_title'))
+                    .setDescription(i18next.t('marry-js_declined_message', { user: userToMarry.id }))
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
+                    .setTimestamp();
+
                 // Отправить ответ об отклонении инициатору
                 try {
                     await interaction.user.send({ embeds: [responseEmbed] });
                 } catch (error) {
                     // Залогировать отклонение в лог-канале, если ЛС не удалось
                     if (logChannel) {
-                        await existingChannel.send({ embeds: [responseEmbed] });
+                        await logChannel.send({ embeds: [responseEmbed] });
                     }
                 }
             }
-        
+
             collector.stop(); // Остановить коллектор после ответа
         });
 
