@@ -64,8 +64,6 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
     supportRoleName TEXT,
     podkastRoleName TEXT,
     moderatorRoleName TEXT,
-    eventRoleName TEXT,
-    controlRoleName TEXT,
     creativeRoleName TEXT,
     applicationsLogChannelName TEXT,
     applicationsLogChannelNameUse BOOLEAN,
@@ -75,7 +73,8 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
     weddingsLogChannelName TEXT,  
     weddingsLogChannelNameUse BOOLEAN,  
     requisitionLogChannelName TEXT,  
-    requisitionLogChannelNameUse TEXT  
+    requisitionLogChannelNameUse TEXT,
+    allowedRoles TEXT
 );`, (err) => {
   if (err) {
     console.error(`Ошибка при создании таблицы server_settings: ${err.message}`);
@@ -96,10 +95,10 @@ function saveServerSettings(guildId, settings) {
       clearLogChannelNameUse, clearNotice, logChannelName, language, automod, NotAutomodChannels,
       automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
       helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
-      podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,
+      podkastRoleName, moderatorRoleName, creativeRoleName,
       applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
       loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse, requisitionLogChannelName,
-      requisitionLogChannelNameUse
+      requisitionLogChannelNameUse,allowedRoles
     } = settings;
 
     db.run(`REPLACE INTO server_settings
@@ -108,11 +107,11 @@ function saveServerSettings(guildId, settings) {
         reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language,
         automod, NotAutomodChannels, automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
         helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
-        podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,
+        podkastRoleName, moderatorRoleName, creativeRoleName,
         applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
         loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse,requisitionLogChannelName,
-        requisitionLogChannelNameUse)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`,
+        requisitionLogChannelNameUse,allowedRoles)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,
       [
         guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice,
         warningLogChannelName, warningLogChannelNameUse, warningDuration, maxWarnings, warningsNotice,
@@ -121,10 +120,10 @@ function saveServerSettings(guildId, settings) {
         clearLogChannelNameUse, clearNotice, logChannelName, language, automod, NotAutomodChannels,
         automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
         helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
-        podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,
+        podkastRoleName, moderatorRoleName, creativeRoleName,
         applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
         loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse, requisitionLogChannelName,
-        requisitionLogChannelNameUse
+        requisitionLogChannelNameUse,allowedRoles
       ], (err) => {
         if (err) {
           console.error(`Ошибка при сохранении настроек сервера: ${err.message}`);
@@ -196,16 +195,15 @@ async function initializeDefaultServerSettings(guildId) {
         randomRoomName: process.env.RANDOM_ROOM_NAME || '🎮Рандомная комната',
         randomRoomNameUse: process.env.RANDOM_ROOM_NAME_USE === '0' ? false : true,
         loversRoleName: process.env.LOVERSROLENAME || '💞',
-        supportRoleName: process.env.SUPPORTROLENAME || 'Саппорт',
-        podkastRoleName: process.env.PODKASTROLENAME || 'Ведущий',
-        moderatorRoleName: process.env.MODERATORROLENAME || 'Модератор',
-        eventRoleName: process.env.EVENTROLENAME || 'Ивентер',
-        controlRoleName: process.env.CONTROLROLENAME || 'Контрол',
-        creativeRoleName: process.env.CREATIVEROLENAME || 'Креатив',
+        supportRoleName: process.env.SUPPORTROLENAME || 'Support',
+        podkastRoleName: process.env.PODKASTROLENAME || 'Tribunmode',
+        moderatorRoleName: process.env.MODERATORROLENAME || 'Moderator',
+        creativeRoleName: process.env.CREATIVEROLENAME || 'Creative',
         weddingsLogChannelName: process.env.WEDDINGS_LOGCHANNELNAME || '🖤свадьба',
         weddingsLogChannelNameUse: process.env.WEDDINGS_LOGCHANNELNAME_USE === '0' ? false : true,
         requisitionLogChannelName: process.env.REQUESTION_LOGCHANNELNAME || 'requisition_HellinModerator_log',
-        requisitionLogChannelNameUse: process.env.REQUESTION_LOGCHANNELNAME_USE === '0' ? false : true
+        requisitionLogChannelNameUse: process.env.REQUESTION_LOGCHANNELNAME_USE === '0' ? false : true,
+        allowedRoles: process.env.ALLOWEDROLES || 'Admin | Отвечает за Staff, Admin | Отвечает за Moderator, Admin | Отвечает за Support, Admin | Отвечает за Tribunmode, Admin | Отвечает за Creative',
       };
 
       // Сохраняем настройки по умолчанию

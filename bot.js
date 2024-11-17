@@ -481,7 +481,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
         // Проверка наличия канала для логирования
         if (!logChannel) {
-          const channelNameToCreate = weddingsLogChannelNameUse ? randomRoomName : logChannelName;
+          const channelNameToCreate = randomRoomNameUse ? randomRoomName : logChannelName;
           const roles = newState.guild.roles.cache;
           const botMember = newState.guild.members.me;
           const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
@@ -525,7 +525,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
             if (recentMembers.length < 25) {
 
-              recentJoins.clear(); // Очищаем recentJoins, если менее 25 участников
+              recentJoins.clear(); 
             }
 
             // Получаем настройки сервера

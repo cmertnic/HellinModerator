@@ -585,6 +585,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'controlRoleName':
         case 'creativeRoleName':
         case 'weddingsLogChannelName':
+        case 'allowedRoles':
 
             if (typeof value !== 'string' || value.length === 0) {
                 isValid = false;
@@ -785,8 +786,9 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'weddingsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_46'), value: config.weddingsLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'requisitionLogChannelName', name: i18next.t('settings-js_buttons_name_47'), value: String(config.requisitionLogChannelName) },
         { key: 'requisitionLogChannelNameUse', name: i18next.t('settings-js_buttons_name_48'), value: config.requisitionLogChannelNameUse === 1 ? '✅' : '❌' },
-
+        { key: 'allowedRoles', name: i18next.t('settings-js_buttons_name_49'), value: String(config.allowedRoles) },
         
+
     ];
 
 

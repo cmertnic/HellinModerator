@@ -373,8 +373,6 @@
     "staffmanagement-js_support": "Support",
     "staffmanagement-js_leader": "Tribune Mode",
     "staffmanagement-js_moderator": "Moderator",
-    "staffmanagement-js_eventer": "Eventer",
-    "staffmanagement-js_control": "Control",
     "staffmanagement-js_creative": "Creative",
     "staffmanagement-js_role_already_hired": "User already has the role {{rolename}}.",
     "staffmanagement-js_role_hired": "The role {{rolename}} was successfully assigned to user <@{{userIdToManage}}>",

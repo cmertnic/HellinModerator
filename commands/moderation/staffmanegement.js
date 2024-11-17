@@ -5,9 +5,9 @@ const { createRoles, createLogChannel } = require('../../events');
 
 async function ensureRolesExist(interaction) {
     const serverSettings = await getServerSettings(interaction.guild.id);
-    const { supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, } = serverSettings;
-    const rolesToCreate = [supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,];
-    const rolesCreationMessages = await createRoles(interaction, rolesToCreate);
+    const { supportRoleName, podkastRoleName, moderatorRoleName, creativeRoleName } = serverSettings;
+    const rolesToCreate = [supportRoleName, podkastRoleName, moderatorRoleName, creativeRoleName];
+    await createRoles(interaction, rolesToCreate);
 }
 
 module.exports = {
@@ -23,8 +23,8 @@ module.exports = {
             .setDescription('Действие (нанять или снять)')
             .setRequired(true)
             .addChoices(
-                { name: ('Повысить'), value: 'hire' },
-                { name: ('Понизить'), value: 'fire' }
+                { name: 'Повысить', value: 'hire' },
+                { name: 'Понизить', value: 'fire' }
             ))
         .addStringOption(option => option
             .setName('role')
@@ -34,8 +34,6 @@ module.exports = {
                 { name: i18next.t('staffmanagement-js_support'), value: 'support' },
                 { name: i18next.t('staffmanagement-js_leader'), value: 'leader' },
                 { name: i18next.t('staffmanagement-js_moderator'), value: 'moderator' },
-                { name: i18next.t('staffmanagement-js_eventer'), value: 'eventer' },
-                { name: i18next.t('staffmanagement-js_control'), value: 'control' },
                 { name: i18next.t('staffmanagement-js_creative'), value: 'creative' }
             )),
     async execute(robot, interaction) {
@@ -60,18 +58,27 @@ module.exports = {
             if (!memberToManage) {
                 return await interaction.editReply({ content: i18next.t('User_not_found'), ephemeral: true });
             }
+
+            // Получаем настройки сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const {  supportRoleName, logChannelName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse } = serverSettings;
+            const { allowedRoles, supportRoleName, podkastRoleName, moderatorRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse, logChannelName } = serverSettings;
+
+            // Извлекаем названия разрешенных ролей
+            const allowedRolesArray = allowedRoles.split(',').map(role => role.split('|')[0].trim());
 
             // Получаем роль бота
             const botMember = interaction.guild.members.me;
             
             
+            
+                  
+            
             // Проверка, есть ли у пользователя роль, которая выше роли бота
             const hasRoleAboveBot = interaction.member.roles.cache.some(role => role.position > botMember.roles.highest.position);
-            
-            // Если у пользователя нет разрешённой роли и его роли не выше роли бота, отклоняем команду
-            if ( !hasRoleAboveBot) {
+            const hasAllowedRole = interaction.member.roles.cache.some(role => allowedRolesArray.includes(role.name));
+
+            // Если у пользователя нет разрешённой роли или его роли не выше роли бота, отклоняем команду
+            if (!hasRoleAboveBot || !hasAllowedRole) {
                 return await interaction.editReply({ content: 'У вас нет прав на выполнение этой команды.', ephemeral: true });
             }
 
@@ -93,42 +100,6 @@ module.exports = {
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
             }
 
-            // Если канал для логов не найден, создаем его
-            if (!logChannel) {
-                const everyoneRole = interaction.guild.roles.everyone;
-
-                try {
-                    logChannel = await interaction.guild.channels.create({
-                        name: logChannelName,
-                        type: ChannelType.GuildText,
-                        permissionOverwrites: [
-                            {
-                                id: everyoneRole.id,
-                                deny: [PermissionFlagsBits.ViewChannel],
-                            },
-                            {
-                                id: botMember.id,
-                                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                            },
-                        ],
-                    });
-
-                    // Получаем всех пользователей с ролями выше бота и разрешаем им видеть канал
-                    const higherRoles = interaction.guild.roles.cache.filter(role => role.position > botMember.roles.highest.position);
-                    higherRoles.forEach(role => {
-                        logChannel.permissionOverwrites.create(role, {
-                            [PermissionFlagsBits.ViewChannel]: true,
-                            [PermissionFlagsBits.SendMessages]: true,
-                        });
-                    });
-
-                    console.log(`Создан новый лог-канал: ${logChannel.name}`);
-                } catch (error) {
-                    console.error(`Не удалось создать канал логирования: ${error.message}`);
-                    return await interaction.editReply({ content: 'Не удалось создать канал логирования.', ephemeral: true });
-                }
-            }
-
             // Проверяем наличие прав у бота
             if (!logChannel.permissionsFor(botMember).has(PermissionFlagsBits.SendMessages)) {
                 return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в лог-канал.', ephemeral: true });
@@ -145,12 +116,6 @@ module.exports = {
                     break;
                 case 'moderator':
                     role = interaction.guild.roles.cache.find(role => role.name === moderatorRoleName);
-                    break;
-                case 'eventer':
-                    role = interaction.guild.roles.cache.find(role => role.name === eventRoleName);
-                    break;
-                case 'control':
-                    role = interaction.guild.roles.cache.find(role => role.name === controlRoleName);
                     break;
                 case 'creative':
                     role = interaction.guild.roles.cache.find(role => role.name === creativeRoleName);
