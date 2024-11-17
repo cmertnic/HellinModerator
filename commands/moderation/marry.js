@@ -103,7 +103,7 @@ module.exports = {
             .setColor(0x00FF00) // Установить цвет вложения
             .setTitle(i18next.t('marry-js_proposal_title')) // Заголовок вложения
             .setDescription(i18next.t('marry-js_proposal_description', { user: interaction.user.username })) // Описание
-            .setImage('https://media.discordapp.net/attachments/1304806409011200063/1305545882027950140/bd7317c5771b33d26df5774f4f2313b2.gif?ex=67336bda&is=67321a5a&hm=43cb738298a892c1a5a04544727db755d0f3fb8029aec44061d5151c38c0975a&=') // Изображение в вложении
+            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=') 
             .setTimestamp(); // Время для вложения
 
         const botMember = interaction.guild.members.me; // Получить участника бота
@@ -158,7 +158,7 @@ module.exports = {
                     .setColor(0x00FF00) // Установить цвет для принятия
                     .setTitle(i18next.t('marry-js_proposal_accepted_title')) // Заголовок для принятия
                     .setDescription(i18next.t('marry-js_proposal_accepted', { user1: interaction.user.username, user2: userToMarry.username })) // Описание для принятия
-                    .setImage('https://images-ext-1.discordapp.net/external/GeSN-LiDIS1WKl8jvHsn2daPuuppCnJ9cxccT1QFioc/https/c.tenor.com/u7B_BCacat8AAAAC/wedding-ring-engaged.gif') // Изображение для принятия
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=') // Изображение для принятия
                     .setTimestamp(); // Время для вложения
                 
                 // Залогировать принятие в лог-канале

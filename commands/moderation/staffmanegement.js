@@ -1,4 +1,4 @@
-const { ChannelType, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { ChannelType, SlashCommandBuilder, PermissionFlagsBits,PermissionsBitField, EmbedBuilder } = require('discord.js');
 const { i18next } = require('../../i18n');
 const { getServerSettings } = require('../../database/settingsDb');
 const { createRoles, createLogChannel } = require('../../events');
@@ -23,8 +23,8 @@ module.exports = {
             .setDescription('Действие (нанять или снять)')
             .setRequired(true)
             .addChoices(
-                { name: 'Повысить', value: 'hire' },
-                { name: 'Понизить', value: 'fire' }
+                { name: ('Повысить'), value: 'hire' },
+                { name: ('Понизить'), value: 'fire' }
             ))
         .addStringOption(option => option
             .setName('role')
@@ -54,33 +54,25 @@ module.exports = {
             const action = interaction.options.getString('action');
             const roleToManage = interaction.options.getString('role');
             const memberToManage = await interaction.guild.members.fetch(userIdToManage);
-
+            const botMember = await interaction.guild.members.fetch(interaction.client.user.id);
             if (!memberToManage) {
                 return await interaction.editReply({ content: i18next.t('User_not_found'), ephemeral: true });
             }
 
-            // Получаем настройки сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
             const { allowedRoles, supportRoleName, podkastRoleName, moderatorRoleName, creativeRoleName, applicationsLogChannelName, applicationsLogChannelNameUse, logChannelName } = serverSettings;
 
             // Извлекаем названия разрешенных ролей
-            const allowedRolesArray = allowedRoles.split(',').map(role => role.split('|')[0].trim());
+            const allowedRolesArray = allowedRoles.split(',').map(role => role.trim());
 
-            // Получаем роль бота
-            const botMember = interaction.guild.members.me;
-            
-            
-            
-                  
-            
-            // Проверка, есть ли у пользователя роль, которая выше роли бота
-            const hasRoleAboveBot = interaction.member.roles.cache.some(role => role.position > botMember.roles.highest.position);
+            // Проверяем наличие роли у пользователя
             const hasAllowedRole = interaction.member.roles.cache.some(role => allowedRolesArray.includes(role.name));
-
-            // Если у пользователя нет разрешённой роли или его роли не выше роли бота, отклоняем команду
-            if (!hasRoleAboveBot || !hasAllowedRole) {
+            
+            // Проверяем права доступа
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !hasAllowedRole) {
                 return await interaction.editReply({ content: 'У вас нет прав на выполнение этой команды.', ephemeral: true });
             }
+
 
             // Получение канала для логирования
             let logChannel;
@@ -95,9 +87,45 @@ module.exports = {
                 const channelNameToCreate = applicationsLogChannelNameUse ? applicationsLogChannelName : logChannelName;
                 const roles = interaction.guild.roles.cache;
                 const botMember = interaction.guild.members.me;
-                const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+               const higherRoles = interaction.guild.roles.cache.filter(role => role.position > botMember.roles.highest.position);
                 await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
                 logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+            }
+
+            // Если канал для логов не найден, создаем его
+            if (!logChannel) {
+                const everyoneRole = interaction.guild.roles.everyone;
+
+                try {
+                    logChannel = await interaction.guild.channels.create({
+                        name: logChannelName,
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            {
+                                id: everyoneRole.id,
+                                deny: [PermissionFlagsBits.ViewChannel],
+                            },
+                            {
+                                id: botMember.id,
+                                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+                            },
+                        ],
+                    });
+
+                    // Получаем всех пользователей с ролями выше бота и разрешаем им видеть канал
+                    const higherRoles = interaction.guild.roles.cache.filter(role => role.position > botMember.roles.highest.position);
+                    higherRoles.forEach(role => {
+                        logChannel.permissionOverwrites.create(role, {
+                            [PermissionFlagsBits.ViewChannel]: true,
+                            [PermissionFlagsBits.SendMessages]: true,
+                        });
+                    });
+
+                    console.log(`Создан новый лог-канал: ${logChannel.name}`);
+                } catch (error) {
+                    console.error(`Не удалось создать канал логирования: ${error.message}`);
+                    return await interaction.editReply({ content: 'Не удалось создать канал логирования.', ephemeral: true });
+                }
             }
 
             // Проверяем наличие прав у бота

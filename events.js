@@ -450,7 +450,7 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
     if (muteNotice && memberToMute) {
         try {
             const embed = new EmbedBuilder()
-                .setColor('#FFA500') // Color of the embed (orange for mute)
+                .setColor('#FFFFE0') // Color of the embed (orange for mute)
                 .setDescription(
                     i18next.t('mute-js_user_message', {
                         moderator: interaction.user.id,
@@ -459,7 +459,7 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
                         reasonMessage: reasonMessage,
                     })
                 )
-                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1305191258385416274/c8fd2f8d8fedab528cc4fa3315e1755c.gif?ex=67322195&is=6730d015&hm=451d13a1d9436ffe86b5b8f30c62598138706feca1c6824daea7bc8fd56f1714&=')
+                .setImage('https://cdn.discordapp.com/attachments/1304707253735002153/1307719133705801760/video.gif?ex=673b53d9&is=673a0259&hm=3a248dfef2f9312ab7b1885eb2f49a9def9db0e0f6f8ba62186d4bdb91a9630b&')
                 .setTimestamp();
 
             await memberToMute.send({ embeds: [embed] });
@@ -526,7 +526,7 @@ async function notifyUserAndLogWarn(interaction, memberToWarn, formattedDuration
                         reason,
                     })
                 )
-                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1305191258385416274/c8fd2f8d8fedab528cc4fa3315e1755c.gif?ex=67322195&is=6730d015&hm=451d13a1d9436ffe86b5b8f30c62598138706feca1c6824daea7bc8fd56f1714&=')
+                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307720199717257216/4.gif?ex=673b54d7&is=673a0357&hm=16bb22346d236d4a8eac88372baa2c4e07c1486758410fed9be8a14904698892&=')
                 .setTimestamp();
 
             await memberToWarn.send({ embeds: [embed] });
@@ -581,8 +581,6 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'supportRoleName':
         case 'podkastRoleName':
         case 'moderatorRoleName':
-        case 'eventRoleName':
-        case 'controlRoleName':
         case 'creativeRoleName':
         case 'weddingsLogChannelName':
         case 'allowedRoles':
@@ -779,15 +777,12 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'supportRoleName', name: i18next.t('settings-js_buttons_name_39'), value: String(config.supportRoleName) },
         { key: 'podkastRoleName', name: i18next.t('settings-js_buttons_name_40'), value: String(config.podkastRoleName) },
         { key: 'moderatorRoleName', name: i18next.t('settings-js_buttons_name_41'), value: String(config.moderatorRoleName) },
-        { key: 'eventRoleName', name: i18next.t('settings-js_buttons_name_42'), value: String(config.eventRoleName) },
-        { key: 'controlRoleName', name: i18next.t('settings-js_buttons_name_43'), value: String(config.controlRoleName) },
         { key: 'creativeRoleName', name: i18next.t('settings-js_buttons_name_44'), value: String(config.creativeRoleName) },
         { key: 'weddingsLogChannelName', name: i18next.t('settings-js_buttons_name_45'), value: String(config.weddingsLogChannelName) },
         { key: 'weddingsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_46'), value: config.weddingsLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'requisitionLogChannelName', name: i18next.t('settings-js_buttons_name_47'), value: String(config.requisitionLogChannelName) },
         { key: 'requisitionLogChannelNameUse', name: i18next.t('settings-js_buttons_name_48'), value: config.requisitionLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'allowedRoles', name: i18next.t('settings-js_buttons_name_49'), value: String(config.allowedRoles) },
-        
 
     ];
 

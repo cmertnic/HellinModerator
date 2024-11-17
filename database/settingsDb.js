@@ -107,8 +107,7 @@ function saveServerSettings(guildId, settings) {
         reportLogChannelName, reportLogChannelNameUse, clearLogChannelName, clearLogChannelNameUse, clearNotice, logChannelName, language,
         automod, NotAutomodChannels, automodBlacklist, automodBadLinks, uniteautomodblacklists, uniteAutomodBadLinks, helpLogChannelName,
         helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
-        podkastRoleName, moderatorRoleName, creativeRoleName,
-        applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
+        podkastRoleName, moderatorRoleName, creativeRoleName,applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
         loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse,requisitionLogChannelName,
         requisitionLogChannelNameUse,allowedRoles)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`,

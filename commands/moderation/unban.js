@@ -102,7 +102,16 @@ module.exports = {
 
             // Уведомление пользователя
             try {
-                await user.send(i18next.t('unban-js_unban_notification_description', { guild: interaction.guild.name}));
+                await user.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(0x00FF00) 
+                            .setTitle(('Вы были разбанены'))
+                            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719818052370482/3.gif?ex=673b547c&is=673a02fc&hm=f028851848c910ff85988a20a3e41ac1cf558a768af7a5c210e75add7fe5cdd6&=')
+                            .setDescription(i18next.t('unban-js_unban_notification_description', { guild: interaction.guild.name }))
+                            .setTimestamp()
+                    ]
+                }).catch(console.error);
             } catch (error) {
                 console.error(`Не удалось отправить сообщение пользователю: ${error.message}`);
             }

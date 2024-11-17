@@ -224,7 +224,6 @@ const rest = new REST().setToken(process.env.TOKEN);
       if (!automod) return;
     
       const NotAutomodChannelsSet = new Set(NotAutomodChannels?.split(',') || []);
-    
       if (NotAutomodChannelsSet.has(message.channel.name)) return;
     
       const botMember = await message.guild.members.fetch(robot.user.id);
@@ -234,7 +233,6 @@ const rest = new REST().setToken(process.env.TOKEN);
       if (botMember.roles.highest.position <= authorMember.roles.highest.position) return;
     
       let logChannel = message.guild.channels.cache.find((channel) => channel.name === logChannelName);
-    
       if (!logChannel) {
         const channelNameToCreate = logChannelName;
         const higherRoles = [...message.guild.roles.cache.values()].filter((role) => botMember.roles.highest.position < role.position);
@@ -262,11 +260,29 @@ const rest = new REST().setToken(process.env.TOKEN);
         bad_linksToUse = [...(automodBadLinks || '').split(',')];
       }
     
+      const whitelistLinks = ['https://discord.gg/hellin,'];
+    
+      // Проверка на ссылки на голосовые каналы и сервер
+      const voiceChannelLinks = message.guild.channels.cache
+        .filter(channel => channel.type === 'GUILD_VOICE')
+        .map(channel => `https://discord.com/channels/${message.guild.id}/${channel.id}`);
+    
+      const serverInviteRegex = /(https?:\/\/)?(www\.)?(discord\.gg|discordapp\.com|discord\.com)\/invite\/[^\s]+/i;
+    
+      // Если сообщение содержит ссылку из белого списка, просто выходим
+      if (whitelistLinks.some(link => mess_value.includes(link))) {
+        return; 
+      }
+    
+      // Если сообщение содержит ссылку на голосовой канал или сервер, просто выходим
+      if (voiceChannelLinks.some(link => mess_value.includes(link)) || serverInviteRegex.test(mess_value)) {
+        return; 
+      }
+    
       // Проверяем черный список и плохие ссылки
       for (const item of [...blacklistToUse, ...bad_linksToUse]) {
         if (mess_value.includes(item)) {
           await message.delete();
-    
           const embed = new EmbedBuilder()
             .setTitle('Сообщение удалено')
             .setDescription(`Сообщение пользователя <@${message.author.id}> было удалено из-за содержания запрещенного слова: ${item}`)
@@ -317,8 +333,12 @@ const rest = new REST().setToken(process.env.TOKEN);
         } catch (error) {
           console.error('Ошибка при отправке сообщения пользователю:', error);
         }
+        return; // Добавляем return, чтобы не продолжать проверку
       }
     });
+
+
+
 
 
 
@@ -525,7 +545,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
             if (recentMembers.length < 25) {
 
-              recentJoins.clear(); 
+              recentJoins.clear();
             }
 
             // Получаем настройки сервера

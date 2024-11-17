@@ -113,8 +113,6 @@ async function removeMuteFromDatabase(robot, guildId, userId) {
 
         logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
     }
-
-    await logChannel.send(i18next.t('mutesDb-js_removeExpiredMutes_log', { userId: userId })).catch(console.error);
 }
 
 
