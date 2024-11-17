@@ -110,8 +110,9 @@ function saveServerSettings(guildId, settings) {
         helpLogChannelNameUse, manRoleName, girlRoleName, newMemberRoleName, banRoleName, supportRoleName,
         podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName,
         applicationsLogChannelName, applicationsLogChannelNameUse, randomRoomName, randomRoomNameUse,
-        loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        loversRoleName, weddingsLogChannelName, weddingsLogChannelNameUse,requisitionLogChannelName,
+        requisitionLogChannelNameUse)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`,
       [
         guildId, muteLogChannelName, muteLogChannelNameUse, mutedRoleName, muteDuration, muteNotice,
         warningLogChannelName, warningLogChannelNameUse, warningDuration, maxWarnings, warningsNotice,
