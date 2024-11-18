@@ -1,12 +1,13 @@
 const cron = require('node-cron');
 const validLanguages = ['ben', 'chi', 'eng', 'fra', 'ger', 'hin', 'jpn', 'kor', 'por', 'rus', 'spa'];
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, StringSelectMenuBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const fs = require('fs').promises;
 const path = require('path');
 require('dotenv').config();
 const { saveServerSettings, getServerSettings } = require('./database/settingsDb');
 const { i18next, t, updateI18nextLanguage } = require('./i18n');
-
+const sharp = require('sharp');
+const axios = require('axios');
 // Функция для валидации ID пользователя с помощью регулярного выражения
 function validateUserId(userId) {
     const regex = /^(?:<@)?!?(\d{17,19})>?$/;
@@ -583,6 +584,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'moderatorRoleName':
         case 'creativeRoleName':
         case 'weddingsLogChannelName':
+        case 'requisitionLogChannelName':
         case 'allowedRoles':
 
             if (typeof value !== 'string' || value.length === 0) {
@@ -628,6 +630,7 @@ async function validateSettingValue(settingKey, value, interaction, guildId) {
         case 'applicationsLogChannelNameUse':
         case 'weddingsLogChannelNameUse':
         case 'randomRoomNameUse':
+        case 'requisitionLogChannelNameUse':
             if (value !== '1' && value !== '0') {
                 isValid = false;
                 errorMessage = i18next.t(`settings-js_trueFalse_err`, { settingKey });

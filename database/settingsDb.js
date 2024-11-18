@@ -82,7 +82,6 @@ db.run(`CREATE TABLE IF NOT EXISTS server_settings (
   }
 });
 
-// Функции для работы с настройками сервера
 
 // Функция для сохранения настроек сервера в базе данных
 function saveServerSettings(guildId, settings) {
