@@ -6,9 +6,9 @@ const { getServerSettings } = require('../../database/settingsDb');
 const { saveWarningToDatabase, removeWarningFromDatabase, getWarningsCount } = require('../../database/warningsDb');
 const { formatDuration, convertToMilliseconds, notifyUserAndLogWarn } = require('../../events');
 const { i18next, t } = require('../../i18n');
-const USER_OPTION_NAME = t('warn-js_user');
-const REASON_OPTION_NAME = t('warn-js_reason');
-const TIME_OPTION_NAME = t('warn-js_time');
+const USER_OPTION_NAME = 'user';
+const REASON_OPTION_NAME = 'reason';
+const TIME_OPTION_NAME = 'time';
 
 module.exports = {
     data: new SlashCommandBuilder()

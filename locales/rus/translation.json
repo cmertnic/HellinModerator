@@ -176,7 +176,7 @@
     "mute-js_moderatorMessage_1": "пользователем: {{userTag}}",
     "mute-js_moderatorMessage_2": "пользователь не указан",
     "mute-js_user_message": "- вы были заглушены <@{{moderator}}> на сервере {{guildName}} на {{durationn}} {{reasonMessage}}.",
-    "unmute-js_user_message": "- вы были разаглушены {{moderator}} на сервере {{guildName}} по причине {{reasonMessage}}.",
+    "unmute-js_user_message": "- вы были разглушены <@{{moderator}}> на сервере {{guildName}} по причине {{reasonMessage}}.",
     "mute-js_muted_user_log_channel_title": "Пользователь замучен",
     "mute-js_muted_user_log_channel": "Пользователь <@{{Mute_member_id}}> был замучен на {{durationn}} по причине {{reasonMessage}}",
     "mute-js_muted_user_log_channel_footer": "Замутил {{moderator}}",

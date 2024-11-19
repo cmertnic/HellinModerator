@@ -5,9 +5,9 @@ const { getServerSettings } = require('../../database/settingsDb');
 const { i18next } = require('../../i18n');
 
 // Определяем названия опций с помощью i18next для локализации
-const USER_OPTION_NAME = i18next.t('ban-js_user');
-const DEL_MESS_TIME_OPTION_NAME = i18next.t('ban-js_del_mess_time');
-const REASON_OPTION_NAME = i18next.t('ban-js_reason');
+const USER_OPTION_NAME ='user';
+const DEL_MESS_TIME_OPTION_NAME = 'time';
+const REASON_OPTION_NAME = 'reason';
 
 // Экспортируем команду как модуль
 module.exports = {

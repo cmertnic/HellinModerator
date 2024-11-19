@@ -4,8 +4,8 @@ const { getUserWarnings, removeWarningFromDatabase } = require('../../database/w
 const { validateUserId, createLogChannel } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
 const { i18next, t } = require('../../i18n');
-const USER_OPTION_NAME = (i18next.t('deletewarn-js_user'));
-const REASON_OPTION_NAME = (i18next.t('deletewarn-js_reason'));
+const USER_OPTION_NAME = 'user';
+const REASON_OPTION_NAME = 'reason';
 
 // Экспорт команды
 module.exports = {

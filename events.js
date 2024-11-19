@@ -689,7 +689,9 @@ async function handleButtonInteraction(interaction, config, page) {
             'helpLogChannelNameUse',
             'applicationsLogChannelNameUse',
             'weddingsLogChannelNameUse',
-            'randomRoomNameUse'
+            'randomRoomNameUse',
+            'requisitionLogChannelNameUse'
+            
         ];
 
         if (booleanSettings.includes(settingKey)) {

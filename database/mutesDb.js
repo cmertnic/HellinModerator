@@ -117,12 +117,12 @@ async function removeMuteFromDatabase(robot, guildId, userId) {
 
 
 // Функция для получения всех активных мутов
-async function getAllActiveMutes() {
+async function getAllActiveMutes(guildId) {
+    const currentTime = Date.now();
+
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM mutes WHERE duration > ?`;
-        mutesDb.all(query, [Date.now()], (err, rows) => {
+        mutesDb.all(`SELECT * FROM mutes WHERE duration > ? AND guildId = ?`, [currentTime, guildId], (err, rows) => {
             if (err) {
-                console.error(`Ошибка при получении активных мутов: ${err.message}`);
                 reject(err);
             } else {
                 resolve(rows);
@@ -130,7 +130,6 @@ async function getAllActiveMutes() {
         });
     });
 }
-
 // Функция для получения истёкших мутов из базы данных
 async function getExpiredMutes(guildId) {
     const currentTime = Date.now();

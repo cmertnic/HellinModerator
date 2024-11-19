@@ -4,8 +4,8 @@ const { Client, ChannelType, SlashCommandBuilder, EmbedBuilder } = require('disc
 const { getServerSettings } = require('../../database/settingsDb');
 const { removeMuteFromDatabase } = require('../../database/mutesDb');
 const { i18next, t } = require('../../i18n');
-const USER_OPTION_NAME = i18next.t('unmute-js_user');
-const REASON_OPTION_NAME = i18next.t('unmute-js_reason');
+const USER_OPTION_NAME = 'user';
+const REASON_OPTION_NAME = 'reason';
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -115,7 +115,7 @@ module.exports = {
                 try {
                     const unmuteEmbed = new EmbedBuilder()
                     .setColor(0x00FF00) 
-                    .setTitle(i18next.t('unmute-js_user_message', { moderator: interaction.user.id,guildName:interaction.guild.name,reason}))
+                    .setTitle(i18next.t('unmute-js_user_message', { moderator: interaction.user.id, guildName:interaction.guild.name,reasonMessage:reason}))
                     .setDescription(`Причина: ${reason}`)
                     .setImage('https://cdn.discordapp.com/attachments/1304707253735002153/1307719133705801760/video.gif?ex=673b53d9&is=673a0259&hm=3a248dfef2f9312ab7b1885eb2f49a9def9db0e0f6f8ba62186d4bdb91a9630b&')
                     .setTimestamp()

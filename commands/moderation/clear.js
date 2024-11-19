@@ -5,7 +5,7 @@ const { getPlural, createLogChannel } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { i18next, t } = require('../../i18n');
-const AMOUNT_OPTION_NAME = (i18next.t('clear-js_amount'));
+const AMOUNT_OPTION_NAME = 'amount';
 
 // Объект для отслеживания состояния выполнения функции для каждого сервера
 const isClearing = {};

@@ -3,8 +3,8 @@ const { createLogChannel } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
 const {Client ,ChannelType, EmbedBuilder,SlashCommandBuilder } = require('discord.js');
 const { i18next, t } = require('../../i18n');
-const USER_OPTION_NAME = i18next.t('report-js_user');
-const REASON_OPTION_NAME = i18next.t('report-js_reason');
+const USER_OPTION_NAME = 'user';
+const REASON_OPTION_NAME = 'reason';
 const userCommandCooldowns = new Map();
 module.exports = {
     data: new SlashCommandBuilder()

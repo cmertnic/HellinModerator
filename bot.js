@@ -6,11 +6,10 @@ const { Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextI
 const fs = require('fs');
 const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings } = require('./database/settingsDb');
-const { getAllMemberIds, updateMembersInfo, removeStaleMembers } = require('./database/membersDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole, createAndSetBanner } = require('./events');
+const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 const sharp = require('sharp');
 const axios = require('axios');
 
@@ -398,7 +397,7 @@ const rest = new REST().setToken(process.env.TOKEN);
         ];
 
         // Добавляем специфические вопросы для роли "Ведущий"
-        if (selectedRole === 'role5') {
+        if (selectedRole === 'role3') {
           additionalQuestions.unshift({ id: 'microphoneModel', label: 'Какую модель микрофона вы используете?', placeholder: 'Razer' });
         }
 
@@ -437,7 +436,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
           // Получаем ответы на дополнительные вопросы
           const additionalInputs = {
-            microphoneModel: selectedRole === 'role5' ? interaction.fields.getTextInputValue('microphoneModel') : 'Не указано',
+            microphoneModel: selectedRole === 'role3' ? interaction.fields.getTextInputValue('microphoneModel') : 'Не указано',
             experience: interaction.fields.getTextInputValue('experience') || 'Не указано',
             motivation: interaction.fields.getTextInputValue('motivation') || 'Не указано',
             time: interaction.fields.getTextInputValue('time') || 'Не указано'
@@ -511,7 +510,7 @@ const rest = new REST().setToken(process.env.TOKEN);
               'https://media.discordapp.net/attachments/1304707253735002153/1308021920368955432/1.2.png?ex=673c6dd7&is=673b1c57&hm=e5e9a4aaa131b42710c4d3dd610d0cebbc1af0c80118c677601bfa30c5fa7d0f&=&format=webp&quality=lossless',
               'https://media.discordapp.net/attachments/1304707253735002153/1308021920725467136/1.3.png?ex=673c6dd7&is=673b1c57&hm=a672069cccc31137c0af2957d96043362d5180cb9e6edfc4c69212a4e4a38ddb&=&format=webp&quality=lossless',
               'https://media.discordapp.net/attachments/1304707253735002153/1308021921274789929/1.4.png?ex=673c6dd7&is=673b1c57&hm=583b4ff3763e7cebf71c34155c8dfa5e046f93f8240460d95d09fc71d96e801b&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021921606144082/1.5.png?ex=673c6dd7&is=673b1c57&hm=af503a1650545f1e2676bd6a11a58aeebb2994f0895b0854d74f1e3d1ddfb30e&=&format=webp&quality=lossless',
+              'https://media.discordapp.net/attachments/1304707253735002153/1308090093965279282/1.5.png?ex=673cad55&is=673b5bd5&hm=b1fa8a4515fcf871b95c8a2b3ad9f4b5f12dbcd2ab96f02afd5d733e70277081&=&format=webp&quality=lossless',
               'https://media.discordapp.net/attachments/1304707253735002153/1308021921907998750/1.6.png?ex=673c6dd8&is=673b1c58&hm=c533d64970e7cd801715b5f6d10fc770ee0569815f4d248e001e076e937706e2&=&format=webp&quality=lossless'
             ];
             captions = [
@@ -685,12 +684,6 @@ const rest = new REST().setToken(process.env.TOKEN);
               const serverSettings = await getServerSettings(guild.id);
               const { newMemberRoleName } = serverSettings;
 
-              // Получаем ID всех участников
-              const memberIds = await getAllMemberIds(guild);
-
-              // Обновляем информацию об участниках
-              await updateMembersInfo(robot, guild.id, memberIds);
-
               // Проверяем участников на наличие ролей и назначаем роль новичка
               const members = await guild.members.fetch();
 
@@ -701,11 +694,8 @@ const rest = new REST().setToken(process.env.TOKEN);
                 }
               }
 
-              // Удаляем устаревших участников из базы данных
-              await removeStaleMembers(guild);
-
               // Удаление истекших предупреждений и мутов
-              await removeExpiredWarnings(robot, guild.id, serverSettings, memberIds);
+              await removeExpiredWarnings(robot, guild.id, serverSettings);
               await removeExpiredMutes(robot, guild.id);
 
             } catch (error) {

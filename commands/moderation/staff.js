@@ -18,7 +18,7 @@ module.exports = {
             return;
         }
         const serverSettings = await getServerSettings(interaction.guild.id);
-        const { supportRoleName, podkastRoleName, moderatorRoleName, eventRoleName, controlRoleName, creativeRoleName, } = serverSettings;
+        const { supportRoleName, podkastRoleName, moderatorRoleName, creativeRoleName, } = serverSettings;
         const embed = new EmbedBuilder()
             .setColor('#696969') // Цвет рамки
             .setTitle('Проходит набор в команду сервера!')
@@ -34,20 +34,14 @@ module.exports = {
                     .setLabel(supportRoleName)
                     .setValue('role1'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel(controlRoleName)
+                    .setLabel(moderatorRoleName)
                     .setValue('role2'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel(eventRoleName)
+                    .setLabel(podkastRoleName)
                     .setValue('role3'),
                 new StringSelectMenuOptionBuilder()
-                    .setLabel(moderatorRoleName)
-                    .setValue('role4'),
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(podkastRoleName)
-                    .setValue('role5'),
-                new StringSelectMenuOptionBuilder()
                     .setLabel(creativeRoleName)
-                    .setValue('role6'),
+                    .setValue('role4'),
             );
 
         const actionRow = new ActionRowBuilder().addComponents(roleSelectMenu);

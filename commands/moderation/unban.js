@@ -4,8 +4,8 @@ const { Client, ChannelType, SlashCommandBuilder, EmbedBuilder } = require('disc
 const { getServerSettings } = require('../../database/settingsDb');
 const { i18next, t } = require('../../i18n');
 
-const USER_OPTION_NAME = i18next.t('unban-js_user');
-const REASON_OPTION_NAME = i18next.t('unban-js_reason');
+const USER_OPTION_NAME = 'user';
+const REASON_OPTION_NAME = 'reason';
 
 module.exports = {
     data: new SlashCommandBuilder()

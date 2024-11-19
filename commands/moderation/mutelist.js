@@ -1,8 +1,10 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, SlashCommandBuilder } = require('discord.js');
+// Импорт необходимых модулей и функций
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const { i18next, t } = require('../../i18n');
 const { getAllActiveMutes } = require('../../database/mutesDb');
 const { formatDuration } = require('../../events');
 const userCommandCooldowns = new Map();
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('mutelist')
@@ -14,23 +16,22 @@ module.exports = {
    * @param {import("discord.js").CommandInteraction} interaction - объект взаимодействия с ботом
    */
   async execute(robot, interaction) {
-    // Откладываем ответ, чтобы бот не блокировался во время выполнения команды
-    await interaction.deferReply({ ephemeral: true });
+    if (interaction.user.bot) return;
+    if (interaction.channel.type === ChannelType.DM) {
+      return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
+    }
     const commandCooldown = userCommandCooldowns.get(interaction.user.id);
     if (commandCooldown && commandCooldown.command === 'mutelist' && Date.now() < commandCooldown.endsAt) {
       const timeLeft = Math.round((commandCooldown.endsAt - Date.now()) / 1000);
-      return interaction.reply({ content: (i18next.t(`cooldown`, { timeLeft: timeLeft})), ephemeral: true });
+      return interaction.reply({ content: (i18next.t(`cooldown`, { timeLeft: timeLeft })), ephemeral: true });
     }
+    await interaction.deferReply({ ephemeral: true });
+
     try {
       // Проверка, что пользователь не бот
       if (interaction.user.bot) return;
       if (interaction.channel.type === ChannelType.DM) {
-        return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
-      }
-
-      // Проверка, что команда не используется в личных сообщениях
-      if (interaction.channel.type === ChannelType.DM) {
-        return interaction.editReply({ content: i18next.t('error_private_messages'), ephemeral: true });
+        return await interaction.editReply({ content: i18next.t('error_private_messages'), ephemeral: true });
       }
 
       const { member, guild } = interaction;
@@ -42,17 +43,16 @@ module.exports = {
 
       // Проверка, что пользователь имеет права модерирования
       if (!interaction.member.permissions.has('ModerateMembers')) {
-        await interaction.reply({ content: i18next.t('ModerateMembers_user_check'), ephemeral: true });
+        await interaction.editReply({ content: i18next.t('ModerateMembers_user_check'), ephemeral: true });
         return;
       }
 
-      //Получение активных мутов
-      const mutes = await getAllActiveMutes();
+      // Получение активных мутов
+      const mutes = await getAllActiveMutes(guild.id);
 
       // Проверка, что есть активные муты
       if (mutes.length === 0) {
-        interaction.editReply({ content: i18next.t('mutelist-js_no_active_mutes'), ephemeral: true });
-        return;
+        return interaction.editReply({ content: i18next.t('mutelist-js_no_active_mutes'), ephemeral: true });
       }
 
       const displayMutes = async (page) => {
@@ -64,7 +64,7 @@ module.exports = {
         const embed = new EmbedBuilder()
           .setTitle(i18next.t('mutelist-js_active_mutes_list', { server_name: guild.name }));
 
-        // описание для embed
+        // Описание для embed
         if (slicedMutes.length > 0) {
           embed
             .setDescription(
@@ -84,7 +84,7 @@ module.exports = {
 
         const rows = [];
 
-        // кнопки для переключения страниц
+        // Кнопки для переключения страниц
         if (page > 1) {
           rows.push(
             new ActionRowBuilder().addComponents(
@@ -114,14 +114,16 @@ module.exports = {
       // Отображение первой страницы мутов
       await displayMutes(1);
 
-      // сборщик сообщений с компонентами для переключения страниц
+      // Сборщик сообщений с компонентами для переключения страниц
       const filter = (i) => i.user.id === interaction.user.id;
       const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000 });
 
       // Обработчик нажатия кнопок
       userCommandCooldowns.set(interaction.user.id, { command: 'mutelist', endsAt: Date.now() + 300200 });
       collector.on('collect', async (i) => {
+        if (i.user.id !== interaction.user.id) return; // Убедитесь, что кнопка нажата тем же пользователем
         if (i.deferred || i.replied) return;
+
         if (i.customId.startsWith('mutelist-page-')) {
           const page = parseInt(i.customId.split('-')[2]);
           await i.update({ components: [] });
@@ -133,6 +135,8 @@ module.exports = {
       console.error(`Произошла ошибка: ${error.message}`);
       return interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
     }
+
+    // Удаляем кэш команд через 5 минут
     setTimeout(() => {
       userCommandCooldowns.delete(interaction.user.id);
     }, 300200);

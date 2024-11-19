@@ -184,7 +184,20 @@ async function getWarningsCount(userIdToWarn) {
         });
     });
 }
+// Асинхронная функция для получения всех активных предупреждений
+async function getAllActiveWarnings(guildId) {
+    const currentTime = Date.now();
 
+    return new Promise((resolve, reject) => {
+        warningsDb.all(`SELECT * FROM warnings WHERE duration > ? AND guildId = ?`, [currentTime, guildId], (err, rows) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
 // Функция для удаления истекших предупреждений
 async function removeExpiredWarnings(robot, guildId) {
     const guild = robot.guilds.cache.get(guildId);
@@ -249,5 +262,6 @@ module.exports = {
     getExpiredWarnings,
     removeWarningFromDatabase,
     removeExpiredWarnings,
-    getWarningsCount
+    getWarningsCount,
+    getAllActiveWarnings
 };
