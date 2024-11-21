@@ -14,13 +14,13 @@ module.exports = {
             return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
         }
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            interaction.reply({ content: i18next.t('Admin_user_check'), ephemeral: true });
+            await interaction.reply({ content: i18next.t('Admin_user_check'), ephemeral: true });
             return;
         }
 
         // Создаем EmbedBuilder с информацией о правилах
         const rulesEmbed = new EmbedBuilder()
-            .setColor(0x0099FF) // Цвет для Embed
+            .setColor(0xFF0000) // Цвет для Embed
             .setTitle('Правила сервера Hellin') // Заголовок для Embed
             .setDescription(
                 'Сервер Hellin. Мы придерживаемся Terms of Service и Community Guidelines. ' +
@@ -28,7 +28,7 @@ module.exports = {
                 '[Community Guidelines](https://discord.com/guidelines)\n' +
                 '[Terms of Service](https://discord.com/terms)'
             )
-            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1308027769250385950/9703fbdf4731dd76.png?ex=673c734a&is=673b21ca&hm=6be4967c3b3cf574e0845aea1fa6e598adfd33cc25bfd7d90e82b9adbb179c0a&=&format=webp&quality=lossless')
+            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309212889013293146/4fb8b30397ef7185.png?ex=6740c304&is=673f7184&hm=f451e267441109324096d53942c7732c9c96b05e81131372b8cfd6e5a24cda3f&=&format=webp&quality=lossless')
             .setTimestamp();
 
         // Создаем выпадающее меню для выбора правил
@@ -56,3 +56,4 @@ module.exports = {
         await interaction.reply({ embeds: [rulesEmbed], components: [actionRow] });
     },
 };
+

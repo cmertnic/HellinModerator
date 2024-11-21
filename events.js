@@ -460,7 +460,7 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
                         reasonMessage: reasonMessage,
                     })
                 )
-                .setImage('https://cdn.discordapp.com/attachments/1304707253735002153/1307719133705801760/video.gif?ex=673b53d9&is=673a0259&hm=3a248dfef2f9312ab7b1885eb2f49a9def9db0e0f6f8ba62186d4bdb91a9630b&')
+                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214768179052584/df0c9e157b1f63b43baa17565ebcaec9_1.png?ex=6740c4c4&is=673f7344&hm=d66aed91f3a432b1da03aa9b4da89a6f2434f37b144b511b3a1789dd366a9feb&=&format=webp&quality=lossless')
                 .setTimestamp();
 
             await memberToMute.send({ embeds: [embed] });
@@ -527,7 +527,7 @@ async function notifyUserAndLogWarn(interaction, memberToWarn, formattedDuration
                         reason,
                     })
                 )
-                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307720199717257216/4.gif?ex=673b54d7&is=673a0357&hm=16bb22346d236d4a8eac88372baa2c4e07c1486758410fed9be8a14904698892&=')
+                .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214696448200724/fd0fa0ef44629b7dc12513dd39b27daa_1.png?ex=6740c4b3&is=673f7333&hm=c47dda9fa3ff4571e54773d7855e5beff3e84df3df52fa07022a68ef3dd78a17&=&format=webp&quality=lossless')
                 .setTimestamp();
 
             await memberToWarn.send({ embeds: [embed] });

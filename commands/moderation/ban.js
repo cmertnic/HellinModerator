@@ -66,20 +66,12 @@ module.exports = {
       const banEmbed = new EmbedBuilder()
         .setColor(0xFF0000)
         .setTitle(i18next.t('ban-js_banned_title'))
-        .setImage('https://media.discordapp.net/attachments/1304707253735002153/1305191258385416274/c8fd2f8d8fedab528cc4fa3315e1755c.gif')
+        .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214603653283963/55c02c6f0fc22ea4b00448f242b59b77_1.png?ex=6740c49d&is=673f731d&hm=a1201c1349bd050132703395323031cb3da9c8210bd27cfa4cce7b4736f928f5&=&format=webp&quality=lossless&width=550&height=274')
         .setDescription(i18next.t('ban-js_banned_description', { moderator: moderator.id, reason }))
         .setTimestamp()
         .setFooter({ text: i18next.t('ban-js_banned_footer') });
 
       await user.send({ embeds: [banEmbed] }).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));
-
-      // Проверка на корректность URL
-      const url = 'https://forms.gle/vrihPf3gUJqEdciL9';
-      if (isValidURL(url)) {
-        await user.send(url).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));
-      } else {
-        console.error(`Некорректный URL: ${url}`);
-      }
 
       let logChannel;
       if (banLogChannelNameUse) {

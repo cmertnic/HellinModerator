@@ -115,9 +115,9 @@ module.exports = {
                 try {
                     const unmuteEmbed = new EmbedBuilder()
                     .setColor(0x00FF00) 
-                    .setTitle(i18next.t('unmute-js_user_message', { moderator: interaction.user.id, guildName:interaction.guild.name,reasonMessage:reason}))
+                    .setTitle(i18next.t('unmute-js_user_message', { moderator: interaction.user.name, guildName:interaction.guild.name,reasonMessage:reason}))
                     .setDescription(`Причина: ${reason}`)
-                    .setImage('https://cdn.discordapp.com/attachments/1304707253735002153/1307719133705801760/video.gif?ex=673b53d9&is=673a0259&hm=3a248dfef2f9312ab7b1885eb2f49a9def9db0e0f6f8ba62186d4bdb91a9630b&')
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214768179052584/df0c9e157b1f63b43baa17565ebcaec9_1.png?ex=6740c4c4&is=673f7344&hm=d66aed91f3a432b1da03aa9b4da89a6f2434f37b144b511b3a1789dd366a9feb&=&format=webp&quality=lossless')
                     .setTimestamp()
                 
                 await memberToUnmute.send({ embeds: [unmuteEmbed] }).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));

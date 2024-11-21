@@ -103,7 +103,7 @@ module.exports = {
             .setColor(0x00FF00) // Установить цвет вложения
             .setTitle(i18next.t('marry-js_proposal_title')) // Заголовок вложения
             .setDescription(i18next.t('marry-js_proposal_description', { user: interaction.user.id })) // Описание
-            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
+            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309215068717584425/0d79c2f8e28195e6d4f3f779b211a6af_1.png?ex=6740c50c&is=673f738c&hm=04dd9b7314a2074538dbb4f2c30aa03a6fec84cfaf28dabefb2de54d5ea798d3&=&format=webp&quality=lossless&width=550&height=245')
             .setTimestamp(); // Время для вложения
 
         const botMember = interaction.guild.members.me; // Получить участника бота
@@ -158,7 +158,7 @@ module.exports = {
                     .setColor(0x00FF00)
                     .setTitle(i18next.t('marry-js_proposal_accepted_title'))
                     .setDescription(i18next.t('marry-js_proposal_accepted', { user1: interaction.user.id, user2: userToMarry.id }))
-                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309215182249136178/8a5402e61d4027fd46203a05ff0e979c_1.png?ex=6740c527&is=673f73a7&hm=a7e74e9781b6c5775236f843565813b64a7f7866f67ffab9124d173121dccc1a&=&format=webp&quality=lossless')
                     .setTimestamp();
 
                 // Залогировать принятие в лог-канале
@@ -180,7 +180,7 @@ module.exports = {
                     .setColor(0xFF0000)
                     .setTitle(i18next.t('marry-js_proposal_declined_title'))
                     .setDescription(i18next.t('marry-js_declined_message', { user: userToMarry.id }))
-                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719710003036282/2.gif?ex=673b5463&is=673a02e3&hm=961f13b1d6e0c48067464d805730effa16089cc115b2bb838d27924c3530de48&=')
+                    .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214860319658074/544606a744f6a1493079bd890497e3bb_2.png?ex=6740c4da&is=673f735a&hm=fefd16854906a389d232f0b44c8a723cb29eae2efb67654601a0612fcdeaf296&=&format=webp&quality=lossless')
                     .setTimestamp();
 
                 // Отправить ответ об отклонении инициатору

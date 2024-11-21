@@ -176,7 +176,7 @@
     "mute-js_moderatorMessage_1": "by user: {{userTag}}",
     "mute-js_moderatorMessage_2": "no user specified",
     "mute-js_user_message": "- you have been muted on server {{guildName}} for {{durationn}} {{reasonMessage}}.",
-    "unmute-js_user_message": "- You have been unmute by <@{{moderator}}> on server {{guildName}} for reason {{reasonMessage}}.",
+    "unmute-js_user_message": "- You have been unmute by {{moderator}} on server {{guildName}} for reason {{reasonMessage}}.",
     "mute-js_muted_user_log_channel_title": "User muted",
     "mute-js_muted_user_log_channel": "User <@{{Mute_member_id}}> was muted for {{durationn}} due to {{reasonMessage}}",
     "mute-js_muted_user_log_channel_footer": "Muted by {{moderator}}",

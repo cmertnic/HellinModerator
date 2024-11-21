@@ -498,20 +498,20 @@ const rest = new REST().setToken(process.env.TOKEN);
     robot.on(Events.InteractionCreate, async (interaction) => {
       // Обработка выбора правила из выпадающего меню
       if (interaction.isStringSelectMenu() && interaction.customId === 'rulesSelect') {
-        let imageUrls;
-        let captions;
+        let imageUrls = [];
+        let captions = [];
 
         switch (interaction.values[0]) {
           case 'rule1':
             imageUrls = [
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021879772156005/3685cb7c54c558b3.png?ex=673c6dce&is=673b1c4e&hm=b922234649ebfb3904d6674c936d183b931aaaa22f1a47d45e95d8c4f95949b6&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021919546609716/1.0.png?ex=673c6dd7&is=673b1c57&hm=88a7a17227c42c2898ddf693db53debf78a9cfb9cdd512d9a4e6306117a16a56&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021919936811079/1.1.png?ex=673c6dd7&is=673b1c57&hm=1b4296d739d174f05d3c872427e76b93dfcdd8a23fcf3564e4e8bda7020b8e08&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021920368955432/1.2.png?ex=673c6dd7&is=673b1c57&hm=e5e9a4aaa131b42710c4d3dd610d0cebbc1af0c80118c677601bfa30c5fa7d0f&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021920725467136/1.3.png?ex=673c6dd7&is=673b1c57&hm=a672069cccc31137c0af2957d96043362d5180cb9e6edfc4c69212a4e4a38ddb&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021921274789929/1.4.png?ex=673c6dd7&is=673b1c57&hm=583b4ff3763e7cebf71c34155c8dfa5e046f93f8240460d95d09fc71d96e801b&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308090093965279282/1.5.png?ex=673cad55&is=673b5bd5&hm=b1fa8a4515fcf871b95c8a2b3ad9f4b5f12dbcd2ab96f02afd5d733e70277081&=&format=webp&quality=lossless',
-              'https://media.discordapp.net/attachments/1304707253735002153/1308021921907998750/1.6.png?ex=673c6dd8&is=673b1c58&hm=c533d64970e7cd801715b5f6d10fc770ee0569815f4d248e001e076e937706e2&=&format=webp&quality=lossless'
+              'https://media.discordapp.net/attachments/1304707253735002153/1309212909263388762/56f3e17d4beceefe.png?ex=6740c309&is=673f7189&hm=a3b0e35cd7b981412bb01ede0d28ec401045327a74af351f220d72518e5810e0&=&format=webp&quality=lossless',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309212946223861850/1.0.png?ex=6740c312&is=673f7192&hm=c2f88fff4ddd60f1caa834f29322504b0a133110446994d5c1642f7a09e589d2&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309212971913969776/1.1.png?ex=6740c318&is=673f7198&hm=add3ff43de572fbf8b9cd08950a5e5513409976be71ed7d7079ded488fba2ab3&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309212995011874877/1.2.png?ex=6740c31e&is=673f719e&hm=9876c0a2825c2da54c97ea649112c56c14e5bdef8eacb962682244753a7bf42b&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213015312306197/1.3.png?ex=6740c322&is=673f71a2&hm=15cca6e6c98940e2cda26562748a298039c7068d4357bcff67cb168dde071c8a&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213035826515978/1.4.png?ex=6740c327&is=673f71a7&hm=b5292d96d7c4a296a7e2e50023a026721e5c8cc9424cefe1382ef4f96982ddc8&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213054868918312/1.5.png?ex=6740c32c&is=673f71ac&hm=6ea789b7b9f7edee3b1ee8ef82affea4359b3a27bc3d7c446019b061f0580e14&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213553949151232/1.6.png?ex=6740c3a3&is=673f7223&hm=5112a587eab27e39f4f47d203b61d305f3ba3753893a5a95461985eeb9c48cad&=&format=webp&quality=lossless&width=550&height=190'
             ];
             captions = [
               ' ',
@@ -524,79 +524,84 @@ const rest = new REST().setToken(process.env.TOKEN);
               'Правило 1.6'
             ];
             break;
-            case 'rule2':
-              imageUrls = [
-                'https://media.discordapp.net/attachments/1304707253735002153/1308021993978855466/0e74938470d982f3.png?ex=673c6de9&is=673b1c69&hm=a2db77bf01f17b58b8ca4038b76507e784b2ee4cee0266c1c482c99b0f64388f&=&format=webp&quality=lossless&width=550&height=189',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022026627452989/2.0.png?ex=673c6df1&is=673b1c71&hm=da91fb9c57c12d68ff4260b5ea6d8a080a6e24fbdae445bef53f1c4da79b1ec6&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022026933633094/2.1.png?ex=673c6df1&is=673b1c71&hm=5a72e86e3f50effab3a9ab630d5283a8e7fadf23eb163d3c24c24ef32b1b8dc0&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022027352932352/2.2.png?ex=673c6df1&is=673b1c71&hm=0eefcb7ee67415d5adaa22d470c48b071bf9f2144b4d3850022b5e61ad3d6d12&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022027742871594/2.3.png?ex=673c6df1&is=673b1c71&hm=52bc5b5ae75060715603619357f0fe4263ba8f8659337f64eb8d35e372545c36&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022028112232551/2.4.png?ex=673c6df1&is=673b1c71&hm=7d30365fecd397bf87635ecc638c56e77f5a60a27cdca72d46dd52787d1ca8d5&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022028514889759/2.5.png?ex=673c6df1&is=673b1c71&hm=383f419960868da41c93ceac3ffa387ba20450bdbabd6042abd6f706ca52597c&=&format=webp&quality=lossless'
-              ];
-              captions = [
-                ' ',
-                'Правило 2.0',
-                'Правило 2.1',
-                'Правило 2.2',
-                'Правило 2.3',
-                'Правило 2.4',
-                'Правило 2.5'
-              ];
+          case 'rule2':
+            imageUrls = [
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213597234233354/0e1137b1e678eef3.png?ex=6740c3ad&is=673f722d&hm=d1fe3eafff5c278ce5c51987ceb8a8b8504044b06d3867f963e7d8c5390cab44&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213736799834112/2.0.png?ex=6740c3ce&is=673f724e&hm=58ae52af1285225d606362f2f74ac049737d85f69e975e44a5ab8db4a061da90&=&format=webp&quality=lossless',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213754944393267/2.1.png?ex=6740c3d3&is=673f7253&hm=a392df3843cd32b2a1165dd166d00078576cc166169918d3c6bed1b9fc671382&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213847986507878/2.2.png?ex=6740c3e9&is=673f7269&hm=3e1cca68631355b647f86fd13720f2de899d0ff914c3b1afb30eab4669e9c248&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309213868450381944/2.3.png?ex=6740c3ee&is=673f726e&hm=9eff63e0b4a0f92e925d2e1b506248c23a94769cb6eb62f06bab93dab42ef11c&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214239797411911/2.4.png?ex=6740c446&is=673f72c6&hm=440f4f95bc524951f6f20b3b060e2366e50a591c71977827382e4d7f2abac94b&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214250035707934/2.5.png?ex=6740c449&is=673f72c9&hm=d539bb1952517476b04c98d722bc5bc2994bafb4ea43e357b8cddd61da2ef6f8&=&format=webp&quality=lossless&width=550&height=190'
+            ];
+            captions = [
+              ' ',
+              'Правило 2.0',
+              'Правило 2.1',
+              'Правило 2.2',
+              'Правило 2.3',
+              'Правило 2.4',
+              'Правило 2.5'
+            ];
             break;
-            case 'rule3':
-              imageUrls = [
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022127357591594/128041928c42778f.png?ex=673c6e09&is=673b1c89&hm=d44abe5d8e5a2e12bec53715f75946ef9c8051f16a8197f1f33cf732d7488fad&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022645681426452/3.0.png?ex=673c6e84&is=673b1d04&hm=c2ef75fd182ab3e4d0dc74fbb4482b96afaffa46b72b0b420e56c0a621199a2a&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022157066113064/3.1.png?ex=673c6e10&is=673b1c90&hm=d6d23617fba889af214b1341923f9f2ec64faed3f5aee6fdeaa84ed00c3c0acd&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022157443596348/3.2.png?ex=673c6e10&is=673b1c90&hm=352cd6a4ff885cdda57c43121336709fb1dfba4213439abda7ae774b11541f69&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022157829476453/3.3.png?ex=673c6e10&is=673b1c90&hm=696212ff0c7bb6f5f290d9303fbe2a9ff170d327014819f6d059f48f2f37ee3d&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022158173274182/3.4.png?ex=673c6e10&is=673b1c90&hm=6e1bf0df143e56adc89416e214427f634d0a376826ad6f55f030e9f382ff0555&=&format=webp&quality=lossless'
-              ];
-              captions = [
-                ' ',
-                'Правило 3.0',
-                'Правило 3.1',
-                'Правило 3.2',
-                'Правило 3.3',
-                'Правило 3.4'
-              ];
+          case 'rule3':
+            imageUrls = [
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214266590629928/cd140f054f923b19.png?ex=6740c44d&is=673f72cd&hm=c084666b1660e8d14df05c8d47bb9f1758c07dca5fbc8fc7bc3129caa260591f&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214279408549998/3.0.png?ex=6740c450&is=673f72d0&hm=bd8390a94c65f34fd83e1f8b507b2ee4853d6833fed2e7a93a8e97af355b6608&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214292712886382/3.1.png?ex=6740c453&is=673f72d3&hm=8e5c3fc600863f188570e0e6b5632cf8e95a068f44213fcaba9e9136944088ce&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214310513250446/3.2.png?ex=6740c457&is=673f72d7&hm=023f98f9ebf46fc1532da9c7ebba1c5eb612034aa07b4146dd87e6d7d4b560a8&=&format=webp&quality=lossless',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214325449293834/3.3.png?ex=6740c45b&is=673f72db&hm=049422d8fa9e778cf4f6a3df55b7ba9a12d27423ecef155b2db0e36d9c41d50a&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214338493448262/3.4.png?ex=6740c45e&is=673f72de&hm=857c977e6b0b4dcf0ee91f24a75814c201daea350fdf3fbf70ae373330c90973&=&format=webp&quality=lossless&width=550&height=189'
+            ];
+            captions = [
+              ' ',
+              'Правило 3.0',
+              'Правило 3.1',
+              'Правило 3.2',
+              'Правило 3.3',
+              'Правило 3.4'
+            ];
             break;
-            case 'rule4':
-              imageUrls = [
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022213990940733/84251ae5ca1e47a4.png?ex=673c6e1d&is=673b1c9d&hm=b31a047edf88dcd54b718317005bc29010638cb10d27d30d3ff2e7d6dd8f72b4&=&format=webp&quality=lossless',
-                'https://media.discordapp.net/attachments/1304707253735002153/1308022234664669204/a17f87e1fc5a375c.png?ex=673c6e22&is=673b1ca2&hm=8b0966e998cdd1a9da2e88b590062b9aae47cadd897276f633531863c0f7f9fe&=&format=webp&quality=lossless'
-              ];
-              captions = [
-                ' ',
-                'Примечание'
-              ];
+          case 'rule4':
+            imageUrls = [
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214359880208435/078199136237c96a.png?ex=6740c463&is=673f72e3&hm=ef06df66b9ea72fe44d97aedd20018f20161cfa361a1edc18b6a8f5c9f2bd3f2&=&format=webp&quality=lossless&width=550&height=190',
+              'https://media.discordapp.net/attachments/1304707253735002153/1309214381413892096/10cec2fcc2f78d17.png?ex=6740c468&is=673f72e8&hm=b3bcfbbd9dfdb9a4a71f535b30559914b935e61d4eee5c45345c121e227f0dba&=&format=webp&quality=lossless&width=550&height=190'
+            ];
+            captions = [
+              ' ',
+              'Примечание'
+            ];
             break;
           default:
             imageUrls = null;
             captions = null;
         }
 
-        if (imageUrls && imageUrls.length > 0) {
-          // Отправляем первое сообщение с описанием
-          await interaction.reply({ content: `открываю правила`, ephemeral: true });
+        if (imageUrls.length > 0) {
+          await interaction.reply({ content: 'Открываю правила...', ephemeral: true });
 
-          // Отправляем каждое изображение в отдельном эфемерном сообщении
           for (let i = 0; i < imageUrls.length; i++) {
-            const embed = new EmbedBuilder()
-              .setColor('#0099ff')
-              .setTitle(captions[i]) // Устанавливаем кастомную приписку
-              .setImage(imageUrls[i]); // Устанавливаем изображение
+              const embed = new EmbedBuilder()
+                  .setColor('#0099ff')
+                  .setTitle(captions[i])
+                  .setImage(imageUrls[i]);
 
-            // Используем followUp для отправки эфемерного сообщения
-            await interaction.followUp({ embeds: [embed], ephemeral: true });
+              try {
+                  await interaction.followUp({ embeds: [embed], ephemeral: true });
+              } catch (error) {
+                  console.error('Ошибка при отправке сообщения:', error);
+                  await interaction.followUp({ content: 'Произошла ошибка при отправке изображения.', ephemeral: true });
+                  break; // Выход из цикла при ошибке
+              }
+
+              // Задержка между отправками сообщений, чтобы избежать превышения лимитов
+              await new Promise(resolve => setTimeout(resolve, 500)); // Задержка 1 секунда
           }
-        } else {
+      } else {
           await interaction.reply({ content: 'Ошибка: изображения не найдены.', ephemeral: true });
-        }
+      }
       }
     });
-
 
 
     // Обработчик события voiceStateUpdate для перемещения пользователя

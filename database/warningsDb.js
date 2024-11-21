@@ -143,7 +143,7 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
                         const messageEmbed = new EmbedBuilder()
                             .setColor(0x00FF00) 
                             .setTitle(i18next.t('Ваше предупреждение было снято'))
-                            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307720199717257216/4.gif?ex=673b54d7&is=673a0357&hm=16bb22346d236d4a8eac88372baa2c4e07c1486758410fed9be8a14904698892&=')
+                            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214696448200724/fd0fa0ef44629b7dc12513dd39b27daa_1.png?ex=6740c4b3&is=673f7333&hm=c47dda9fa3ff4571e54773d7855e5beff3e84df3df52fa07022a68ef3dd78a17&=&format=webp&quality=lossless&width=550&height=276')
                             .setTimestamp();
                     
                         await member.send({ embeds: [messageEmbed] }).catch(console.error);

@@ -1,7 +1,7 @@
 // Импорт необходимых модулей и функций
 const { Client, ChannelType, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const schedule = require('node-schedule');
-const { createMutedRole, createLogChannel } = require('../../events');
+const { createLogChannel } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
 const { saveWarningToDatabase, removeWarningFromDatabase, getWarningsCount } = require('../../database/warningsDb');
 const { formatDuration, convertToMilliseconds, notifyUserAndLogWarn } = require('../../events');

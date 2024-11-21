@@ -107,7 +107,7 @@ module.exports = {
                         new EmbedBuilder()
                             .setColor(0x00FF00) 
                             .setTitle(('Вы были разбанены'))
-                            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1307719818052370482/3.gif?ex=673b547c&is=673a02fc&hm=f028851848c910ff85988a20a3e41ac1cf558a768af7a5c210e75add7fe5cdd6&=')
+                            .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214603653283963/55c02c6f0fc22ea4b00448f242b59b77_1.png?ex=6740c49d&is=673f731d&hm=a1201c1349bd050132703395323031cb3da9c8210bd27cfa4cce7b4736f928f5&=&format=webp&quality=lossless&width=550&height=274')
                             .setDescription(i18next.t('unban-js_unban_notification_description', { guild: interaction.guild.name }))
                             .setTimestamp()
                     ]

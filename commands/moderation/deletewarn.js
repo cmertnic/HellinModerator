@@ -111,6 +111,7 @@ module.exports = {
                 .setDescription(i18next.t(`deletewarn-js_delete_warning_log_channel`, {
                     userIdToDeleteWarning: userIdToDeleteWarning, reason: reason
                 }))
+                
                 .setTimestamp()
                 .setFooter({ text: i18next.t('deletewarn-js_delete_warning_footer', { moderator: interaction.user.tag }) });
 
