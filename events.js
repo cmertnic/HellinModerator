@@ -691,7 +691,7 @@ async function handleButtonInteraction(interaction, config, page) {
             'weddingsLogChannelNameUse',
             'randomRoomNameUse',
             'requisitionLogChannelNameUse'
-            
+
         ];
 
         if (booleanSettings.includes(settingKey)) {
@@ -896,19 +896,18 @@ async function ensureRolesExist(guild, roleName) {
     return role;
 }
 
-// Отдельная функция для обработки выбора из выпадающего меню help
-async function handleSelectInteraction(helpChannel, selectInteraction, questionUser, questionContent) {
+async function handleSelectInteraction(helpChannel, selectInteraction, questionUser , questionContent) {
     try {
-        // Проверяем, было ли взаимодействие уже обработано
+        // Check if the interaction has already been processed
         if (selectInteraction.replied || selectInteraction.deferred) return;
 
-        await selectInteraction.deferUpdate(); // Подтверждаем взаимодействие
+        await selectInteraction.deferUpdate(); // Acknowledge the interaction
 
         const selectedValue = selectInteraction.values[0];
         const selectRow = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId(`responseSelect_${selectInteraction.message.id}`)
-                .setDisabled(true) // Делаем меню недоступным
+                .setDisabled(true) // Disable the menu
                 .setPlaceholder('Вы уже выбрали ответ')
                 .addOptions([
                     { label: 'Да', value: 'response_yes' },
@@ -923,7 +922,7 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
             const responsePrompt = 'Пожалуйста, введите свой ответ в чате.';
             await selectInteraction.followUp({ content: responsePrompt, ephemeral: true });
 
-            const filter = msg => msg.author.id === questionUser.id && !msg.author.bot;
+            const filter = msg => msg.author.id === questionUser .id && !msg.author.bot;
             const collector = selectInteraction.channel.createMessageCollector({ filter, max: 1, time: 60000 });
 
             collector.on('collect', async (msg) => {
@@ -935,22 +934,22 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
                         .addFields({ name: 'Ваш вопрос:', value: questionContent })
                         .setTimestamp();
 
-                    await questionUser.send({ embeds: [responseEmbed] });
+                    await questionUser .send({ embeds: [responseEmbed] });
                     await selectInteraction.followUp({ content: `Ваш ответ был отправлен <@${selectInteraction.user.id}>.`, ephemeral: true });
 
-                    // Устанавливаем напоминание
+                    // Set a reminder
                     setTimeout(async () => {
                         try {
-                            await questionUser.send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
+                            await questionUser .send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
                         } catch (error) {
-                            console.error(`Не удалось отправить напоминание пользователю ${questionUser.tag}: ${error.message}`);
+                            console.error(`Не удалось отправить напоминание пользователю ${questionUser .tag}: ${error.message}`);
                         }
-                    }, 3600000); // 1 час
+                    }, 3600000); // 1 hour
 
-                    await selectInteraction.message.delete();
-                    await msg.delete();
+                    // Удаляем сообщение пользователя
+                    await msg.delete().catch(console.error);
                 } catch (error) {
-                    console.error(`Не удалось отправить личное сообщение пользователю ${questionUser.tag}: ${error.message}`);
+                    console.error(`Не удалось отправить личное сообщение пользователю ${questionUser .tag}: ${error.message}`);
                     await selectInteraction.followUp({ content: 'Не удалось отправить вам личное сообщение. Проверьте настройки конфиденциальности.', ephemeral: true });
                 }
             });
@@ -969,25 +968,36 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
                 .addFields({ name: 'Ваш вопрос:', value: questionContent })
                 .setTimestamp();
 
-            await helpChannel.messages.delete(selectInteraction.message.id).catch(console.error);
-            await questionUser.send({ embeds: [responseEmbed] });
+            // Отправляем ответ пользователю
+            await questionUser .send({ embeds: [responseEmbed] });
             await selectInteraction.followUp({ content: `Вам был отправлен ответ от <@${selectInteraction.user.id}>.`, ephemeral: true });
 
-            // Устанавливаем напоминание
+            // Set a reminder
             setTimeout(async () => {
                 try {
-                    await questionUser.send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
+                    await questionUser .send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
                 } catch (error) {
-                    console.error(`Не удалось отправить напоминание пользователю ${questionUser.tag}: ${error.message}`);
+                    console.error(`Не удалось отправить напоминание пользователю ${questionUser .tag}: ${error.message}`);
                 }
-            }, 3600000); // 1 час
+            }, 3600000); // 1 hour
 
-            await selectInteraction.message.delete();
+            // Удаляем сообщение выбора, если оно существует
+            await selectInteraction.message.delete().catch(err => {
+                if (err.code === 10008) {
+                    console.warn(`Игнорируется ошибка: ${err.message}`);
+                } else {
+                    console.error(`Ошибка при удалении сообщения: ${err.message}`);
+                }
+            });
         }
     } catch (error) {
         console.error(`Ошибка при обработке взаимодействия: ${error.message}`);
     }
 }
+
+
+
+
 // Экспортируем функции для использования в других файлах
 module.exports = {
     validateUserId,

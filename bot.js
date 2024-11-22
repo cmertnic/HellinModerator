@@ -10,8 +10,6 @@ const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
 const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
-const sharp = require('sharp');
-const axios = require('axios');
 
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
@@ -351,12 +349,6 @@ const rest = new REST().setToken(process.env.TOKEN);
         return; // Добавляем return, чтобы не продолжать проверку
       }
     });
-
-
-
-
-
-
     const chosenRoles = []; // Массив для хранения выбранных ролей
     let selectedRole; // Переменная для хранения последней выбранной роли
 
