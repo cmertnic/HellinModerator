@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 // Импортируем необходимые модули
-const { Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings } = require('./database/settingsDb');
@@ -581,25 +581,25 @@ const rest = new REST().setToken(process.env.TOKEN);
           await interaction.reply({ content: 'Открываю правила...', ephemeral: true });
 
           for (let i = 0; i < imageUrls.length; i++) {
-              const embed = new EmbedBuilder()
-                  .setColor('#0099ff')
-                  .setTitle(captions[i])
-                  .setImage(imageUrls[i]);
+            const embed = new EmbedBuilder()
+              .setColor('#0099ff')
+              .setTitle(captions[i])
+              .setImage(imageUrls[i]);
 
-              try {
-                  await interaction.followUp({ embeds: [embed], ephemeral: true });
-              } catch (error) {
-                  console.error('Ошибка при отправке сообщения:', error);
-                  await interaction.followUp({ content: 'Произошла ошибка при отправке изображения.', ephemeral: true });
-                  break; // Выход из цикла при ошибке
-              }
+            try {
+              await interaction.followUp({ embeds: [embed], ephemeral: true });
+            } catch (error) {
+              console.error('Ошибка при отправке сообщения:', error);
+              await interaction.followUp({ content: 'Произошла ошибка при отправке изображения.', ephemeral: true });
+              break; // Выход из цикла при ошибке
+            }
 
-              // Задержка между отправками сообщений, чтобы избежать превышения лимитов
-              await new Promise(resolve => setTimeout(resolve, 500)); // Задержка 1 секунда
+            // Задержка между отправками сообщений, чтобы избежать превышения лимитов
+            await new Promise(resolve => setTimeout(resolve, 500)); // Задержка 1 секунда
           }
-      } else {
+        } else {
           await interaction.reply({ content: 'Ошибка: изображения не найдены.', ephemeral: true });
-      }
+        }
       }
     });
 

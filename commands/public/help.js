@@ -35,7 +35,8 @@ module.exports = {
         const serverSettings = await getServerSettings(interaction.guild.id);
         const helpLogChannelName = serverSettings.helpLogChannelName;
         const helpLogChannelNameUse = serverSettings.helpLogChannelNameUse;
-        const logChannelName = serverSettings.logChannelName;
+        const logChannelName = serverSettings.logChannelName;   
+        const botMember = interaction.guild.members.me; // Получение информации о боте
         let logChannel;
         if (helpLogChannelNameUse) {
             logChannel = interaction.guild.channels.cache.find(ch => ch.name === helpLogChannelName);
@@ -55,7 +56,7 @@ module.exports = {
     
             logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
         }
-        const botMember = interaction.guild.members.me; // Получение информации о боте
+     
 
         // Создаем вложение для сообщения
         const questionEmbed = new EmbedBuilder()
