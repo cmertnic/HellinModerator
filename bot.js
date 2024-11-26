@@ -201,8 +201,7 @@ const rest = new REST().setToken(process.env.TOKEN);
 
         // Выдаем роль новому участнику
         await assignNewMemberRole(member, newMemberRoleName);
-      } catch (error) {
-        console.error(`Ошибка при обработке нового участника ${member.user.tag}: ${error.message}`);
+      } catch {
       }
     });
 

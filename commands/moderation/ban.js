@@ -1,17 +1,16 @@
 // Импортируем необходимые классы и модули
-const { SlashCommandBuilder, ChannelType, PermissionsBitField, EmbedBuilder } = require('discord.js');
-const { createLogChannel, deleteMessages, createRoles } = require('../../events');
+const { SlashCommandBuilder, ChannelType, EmbedBuilder } = require('discord.js');
+const { createLogChannel, convertToMilliseconds, deleteMessages } = require('../../events');
 const { getServerSettings } = require('../../database/settingsDb');
 const { i18next } = require('../../i18n');
 
 // Определяем названия опций с помощью i18next для локализации
-const USER_OPTION_NAME ='user';
+const USER_OPTION_NAME = 'user';
 const DEL_MESS_TIME_OPTION_NAME = 'time';
 const REASON_OPTION_NAME = 'reason';
 
 // Экспортируем команду как модуль
 module.exports = {
-  // Определяем данные команды с помощью SlashCommandBuilder
   data: new SlashCommandBuilder()
     .setName('ban')
     .setDescription('Забанить пользователя')
@@ -32,37 +31,33 @@ module.exports = {
     if (interaction.channel.type === ChannelType.DM) {
       return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
     }
-
     await interaction.deferReply({ ephemeral: true });
+
     try {
       const { member, guild } = interaction;
-
       const user = interaction.options.getMember(USER_OPTION_NAME);
       const userId = user.id;
-
       const reason = interaction.options.getString(REASON_OPTION_NAME) || i18next.t('defaultReason');
       const deleteMessagesTime = interaction.options.getString(DEL_MESS_TIME_OPTION_NAME);
-
-      const serverSettings = await getServerSettings(interaction.guild.id);
-      const { banRoleName, logChannelName, banLogChannelName, banLogChannelNameUse } = serverSettings;
-
+      const serverSettings = await getServerSettings(guild.id);
+      const logChannelName = serverSettings.logChannelName;
+      const banLogChannelName = serverSettings.banLogName;
+      const banLogChannelNameUse = serverSettings.banLogChannelNameUse;
+      const deletingMessagesFromBannedUsers = serverSettings.deletingMessagesFromBannedUsers;
       const moderator = interaction.user;
       const botMember = guild.members.cache.get(robot.user.id);
 
-      if (!interaction.member.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-        return await interaction.editReply({ content: i18next.t('у вас нет полномочий BanMembers'), ephemeral: true });
+      if (!member.permissions.has('BanMembers')) {
+        return interaction.editReply({ content: i18next.t('BanMembers_user_check'), ephemeral: true });
       }
-      if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-        return await interaction.editReply({ content: i18next.t('у меня нет полномочий ManageRoles'), ephemeral: true });
+      if (!botMember.permissions.has('BanMembers')) {
+        return interaction.editReply({ content: i18next.t('BanMembers_bot_check'), ephemeral: true });
       }
-
-      const banRole = interaction.guild.roles.cache.find(role => role.name === banRoleName);
-      if (!banRole) {
-        await createRoles(interaction, [banRoleName]);
+      if (user.roles.highest.comparePositionTo(interaction.member.roles.highest) > 0 || user.roles.highest.comparePositionTo(botMember.roles.highest) > 0) {
+        return interaction.editReply({ content: i18next.t('ban-js_user_above_bot_or_author'), ephemeral: true });
       }
 
-      await user.roles.add(banRole, reason);
-
+      // Отправляем сообщение пользователю перед баном
       const banEmbed = new EmbedBuilder()
         .setColor(0xFF0000)
         .setTitle(i18next.t('ban-js_banned_title'))
@@ -73,6 +68,7 @@ module.exports = {
 
       await user.send({ embeds: [banEmbed] }).catch(err => console.error(`Не удалось отправить сообщение пользователю: ${err.message}`));
 
+      // Находим канал логирования на основе настроек сервера
       let logChannel;
       if (banLogChannelNameUse) {
         logChannel = guild.channels.cache.find(ch => ch.name === banLogChannelName);
@@ -80,17 +76,25 @@ module.exports = {
         logChannel = guild.channels.cache.find(ch => ch.name === logChannelName);
       }
 
+      // Если канал логирования не существует, создаем его
       if (!logChannel) {
         const channelNameToCreate = banLogChannelNameUse ? banLogChannelName : logChannelName;
-        const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, guild.members.cache.get(robot.user.id), guild.roles.cache.filter(role => role.comparePositionTo(guild.members.cache.get(robot.user.id).roles.highest) > 0), serverSettings);
+        const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, guild.roles.cache.filter(role => role.comparePositionTo(botMember.roles.highest) > 0), serverSettings);
 
         if (logChannelCreationResult.startsWith('Ошибка')) {
-          return await interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+          return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
         }
 
         logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
       }
 
+      // Баним пользователя с указанной причиной и удаляем его сообщения, если это разрешено
+      await user.ban({ reason, days: deleteMessagesTime ? convertToMilliseconds(deleteMessagesTime) / (1000 * 60 * 60 * 24) : 0 });
+
+      // Удаляем сообщения забаненного пользователя на основе настроек сервера и указанного периода времени
+      const deletedMessagesCount = deletingMessagesFromBannedUsers && deleteMessagesTime !== '0' ? await deleteMessages(user, deleteMessagesTime, guild, logChannel) : 0;
+
+      // Создаем вставку для регистрации события бана
       const EmbedBan = new EmbedBuilder()
         .setColor(0xFF0000)
         .setTitle(i18next.t('ban-js_block_user_title', { reason }))
@@ -99,21 +103,12 @@ module.exports = {
         .setFooter({ text: i18next.t('ban-js_block_user_footer', { moderator: moderator.tag }) });
 
       await logChannel.send({ embeds: [EmbedBan] });
-      await interaction.editReply({ content: i18next.t('ban-js_block_user_title'), ephemeral: true });
 
+      // Отвечаем пользователю, который выполнил команду, сообщением с подтверждением
+      await interaction.editReply({ content: i18next.t('ban-js_block_user_log_moderator', { user: userId, deletedMessagesCount }), ephemeral: true });
     } catch (error) {
       console.error(`Произошла ошибка: ${error.message}`);
-      return await interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
+      return interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
     }
   },
 };
-
-// Функция для проверки корректности URL
-function isValidURL(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}

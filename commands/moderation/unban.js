@@ -2,7 +2,7 @@
 const { createRoles, createLogChannel } = require('../../events');
 const { Client, ChannelType, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { getServerSettings } = require('../../database/settingsDb');
-const { i18next, t } = require('../../i18n');
+const { i18next } = require('../../i18n');
 
 const USER_OPTION_NAME = 'user';
 const REASON_OPTION_NAME = 'reason';
@@ -10,8 +10,8 @@ const REASON_OPTION_NAME = 'reason';
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('unban')
-        .setDescription('Причина разбана')
-        .addUserOption (option =>
+        .setDescription('Разбанить пользователя')
+        .addUserOption(option =>
             option.setName(USER_OPTION_NAME)
                 .setDescription('Пользователь')
                 .setRequired(true)
@@ -35,7 +35,7 @@ module.exports = {
             if (interaction.user.bot) return;
             if (interaction.channel.type === ChannelType.DM) {
                 return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
-              }
+            }
 
             // Получение ID пользователя и причины разблокировки
             const user = interaction.options.getUser (USER_OPTION_NAME);
@@ -48,13 +48,7 @@ module.exports = {
 
             // Получение настроек сервера
             const serverSettings = await getServerSettings(interaction.guild.id);
-            const {banRoleName, logChannelName,banLogChannelName, banLogChannelNameUse } = serverSettings;
-
-            // Проверка наличия роли "Ban"
-            const banRole = interaction.guild.roles.cache.find(role => role.name === banRoleName);
-            if (!banRole) {
-                await createRoles(interaction, [banRoleName]);
-            }
+            const { logChannelName, banLogChannelName, banLogChannelNameUse } = serverSettings;
 
             // Получение канала для логирования
             let logChannel;
@@ -66,7 +60,7 @@ module.exports = {
 
             // Проверка наличия канала для логирования
             if (!logChannel) {
-                const channelNameToCreate = banlogChannelNameUse ? banLogChannelName : logChannelName;
+                const channelNameToCreate = banLogChannelNameUse ? banLogChannelName : logChannelName;
                 const roles = interaction.guild.roles.cache;
                 const botMember = interaction.guild.members.me;
                 const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
@@ -76,18 +70,12 @@ module.exports = {
 
             // Проверка прав пользователя и бота
             const botMember = interaction.guild.members.me;
-            if (!botMember.permissions.has('ManageRoles') || botMember.roles.highest.comparePositionTo(banRole) <= 0) {
+            if (!botMember.permissions.has('BanMembers')) {
                 return interaction.editReply({ content: i18next.t('unban-js_bot_permissions'), ephemeral: true });
             }
 
-            // Проверка, имеет ли пользователь роль "Ban"
-            const memberToUnban = interaction.guild.members.cache.get(userId);
-            if (!memberToUnban || !memberToUnban.roles.cache.has(banRole.id)) {
-                return interaction.editReply({ content: i18next.t('unban-js_user_not_blocked', { userId: userId }), ephemeral: true });
-            }
-
-            // Удаление роли "Ban" у пользователя
-            await memberToUnban.roles.remove(banRole, reason);
+            // Разбан пользователя
+            await interaction.guild.members.unban(userId, reason);
 
             // Создание embed для лога в канале логов
             const embed = new EmbedBuilder()
@@ -105,8 +93,8 @@ module.exports = {
                 await user.send({
                     embeds: [
                         new EmbedBuilder()
-                            .setColor(0x00FF00) 
-                            .setTitle(('Вы были разбанены'))
+                            .setColor(0x00FF00)
+                            .setTitle('Вы были разбанены')
                             .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214603653283963/55c02c6f0fc22ea4b00448f242b59b77_1.png?ex=6740c49d&is=673f731d&hm=a1201c1349bd050132703395323031cb3da9c8210bd27cfa4cce7b4736f928f5&=&format=webp&quality=lossless&width=550&height=274')
                             .setDescription(i18next.t('unban-js_unban_notification_description', { guild: interaction.guild.name }))
                             .setTimestamp()
