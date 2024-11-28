@@ -22,7 +22,7 @@ module.exports = {
                 { name: ('Изменить гендер'), value: 'change_gender' }
             ))
         .addStringOption(option => option
-            .setName('gender') 
+            .setName('gender')
             .setDescription('Выберите гендер пользователя (необязательно)')
             .setRequired(false)
             .addChoices(
@@ -34,10 +34,11 @@ module.exports = {
         if (interaction.channel.type === ChannelType.DM) {
             return await interaction.reply({ content: i18next.t('error_private_messages'), ephemeral: true });
         }
+
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            const userIdToVerify = interaction.options.getUser ('user').id;
+            const userIdToVerify = interaction.options.getUser('user').id;
             const action = interaction.options.getString('action');
             const memberToVerify = await interaction.guild.members.fetch(userIdToVerify);
 
@@ -67,6 +68,8 @@ module.exports = {
                 return await interaction.editReply({ content: 'У бота нет прав на отправку сообщений в канал логов.', ephemeral: true });
             }
 
+            let responseMessage = ''; // Переменная для хранения сообщения ответа
+
             switch (action) {
                 case 'give_role':
                     let roleToAssign;
@@ -75,31 +78,30 @@ module.exports = {
                     } else if (gender === 'female') {
                         roleToAssign = interaction.guild.roles.cache.find(role => role.name === girlRoleName);
                     } else {
-                        return await interaction.editReply({ content: i18next.t('verify-js_gender_not_found'), ephemeral: true });
+                        responseMessage = i18next.t('verify-js_gender_not_found');
+                        break;
                     }
 
                     if (roleToAssign) {
-                        // Проверяем, есть ли уже у пользователя эта роль
                         if (memberToVerify.roles.cache.has(roleToAssign.id)) {
-                            return await interaction.editReply({ content: i18next.t('verify-js_role_already_declared', { rolename: roleToAssign.name }), ephemeral: true });
+                            responseMessage = i18next.t('verify-js_role_already_declared', { rolename: roleToAssign.name });
+                            break;
                         }
 
                         await memberToVerify.roles.add(roleToAssign);
-                        await interaction.editReply({ content: i18next.t('verify-js_role_add', { rolename: roleToAssign.name, userIdToVerify: userIdToVerify }), ephemeral: true });
+                        responseMessage = i18next.t('verify-js_role_add', { rolename: roleToAssign.name, userIdToVerify: userIdToVerify });
 
-                        // Убираем роль "Новичок", если она есть
                         const rookieRole = interaction.guild.roles.cache.find(role => role.name === newMemberRoleName);
                         if (rookieRole && memberToVerify.roles.cache.has(rookieRole.id)) {
                             await memberToVerify.roles.remove(rookieRole);
                         }
 
-                        // Отправка личного сообщения пользователю
                         try {
                             await memberToVerify.send(i18next.t('verify-js_role_assigned_message', { rolename: roleToAssign.name, moderator: interaction.user.id }));
-                        } catch {
+                        } catch (error) {
+                            console.error(`Не удалось отправить личное сообщение: ${error.message}`);
                         }
 
-                        // Создание embed для лога в канале логов
                         const genderSelectEmbed = new EmbedBuilder()
                             .setColor(0x00FF00)
                             .setTitle(i18next.t('verify-js_role_given_log_title'))
@@ -107,10 +109,9 @@ module.exports = {
                             .setTimestamp()
                             .setFooter({ text: i18next.t('verify-js_log_footer', { moderator: interaction.user.tag }) });
 
-                        // Отправка embed в канал логов
                         await logChannel.send({ embeds: [genderSelectEmbed] });
                     } else {
-                        await interaction.editReply({ content: 'Роль не найдена.', ephemeral: true });
+                        responseMessage = 'Роль не найдена.';
                     }
                     break;
 
@@ -118,11 +119,10 @@ module.exports = {
                     const reason = 'Non-admission';
                     await memberToVerify.ban({ reason }).catch(error => {
                         console.error(`Ошибка при бане пользователя: ${error.message}`);
-                        return interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
+                        responseMessage = i18next.t('Error');
                     });
-                    await interaction.editReply({ content: i18next.t('verify-js_user_banned_log', { member: memberToVerify.id, reason }), ephemeral: true });
+                    responseMessage = i18next.t('verify-js_user_banned_log', { member: memberToVerify.id, reason });
 
-                    // Создание embed для лога в канале логов
                     const banEmbed = new EmbedBuilder()
                         .setColor(0xFF0000)
                         .setTitle(i18next.t('verify-js_user_banned_log_title'))
@@ -130,7 +130,6 @@ module.exports = {
                         .setTimestamp()
                         .setFooter({ text: i18next.t('verify-js_log_footer', { moderator: interaction.user.tag }) });
 
-                    // Отправка embed в канал логов
                     await logChannel.send({ embeds: [banEmbed] });
                     break;
 
@@ -141,9 +140,8 @@ module.exports = {
                     if (gender === 'male' && femaleRole && memberToVerify.roles.cache.has(femaleRole.id)) {
                         await memberToVerify.roles.remove(femaleRole);
                         await memberToVerify.roles.add(maleRole);
-                        await interaction.editReply({ content: i18next.t('verify-js_gender_changed_log_title'), ephemeral: true });
+                        responseMessage = i18next.t('verify-js_gender_changed_log_title');
 
-                        // Создание embed для лога в канале логов
                         const genderChangeEmbedMale = new EmbedBuilder()
                             .setColor(0xFFFF00)
                             .setTitle(i18next.t('verify-js_gender_changed_log_title'))
@@ -151,14 +149,12 @@ module.exports = {
                             .setTimestamp()
                             .setFooter({ text: i18next.t('verify-js_log_footer', { moderator: interaction.user.tag }) });
 
-                        // Отправка embed в канал логов
                         await logChannel.send({ embeds: [genderChangeEmbedMale] });
                     } else if (gender === 'female' && maleRole && memberToVerify.roles.cache.has(maleRole.id)) {
                         await memberToVerify.roles.remove(maleRole);
                         await memberToVerify.roles.add(femaleRole);
-                        await interaction.editReply({ content: i18next.t('verify-js_gender_changed_log_title'), ephemeral: true });
+                        responseMessage = i18next.t('verify-js_gender_changed_log_title');
 
-                        // Создание embed для лога в канале логов
                         const genderChangeEmbedFemale = new EmbedBuilder()
                             .setColor(0xFFFF00)
                             .setTitle(i18next.t('verify-js_gender_changed_log_title'))
@@ -166,19 +162,23 @@ module.exports = {
                             .setTimestamp()
                             .setFooter({ text: i18next.t('verify-js_log_footer', { moderator: interaction.user.tag }) });
 
-                        // Отправка embed в канал логов
                         await logChannel.send({ embeds: [genderChangeEmbedFemale] });
                     } else {
-                        await interaction.editReply({ content: i18next.t('verify-js_no_roles'), ephemeral: true });
+                        responseMessage = i18next.t('verify-js_no_roles');
                     }
                     break;
 
                 default:
-                    await interaction.editReply({ content: i18next.t('Error'), ephemeral: true });
+                    responseMessage = i18next.t('Error');
             }
+
+            // Отправка ответа
+            await interaction.editReply({ content: responseMessage || 'Действие выполнено успешно.', ephemeral: true });
         } catch (error) {
             console.error(`Произошла ошибка: ${error.message}`);
-            return await interaction.editReply({ content: `Произошла ошибка: ${error.message}`, ephemeral: true });
+            if (!interaction.replied) {
+                await interaction.editReply({ content: `Произошла ошибка: ${error.message}`, ephemeral: true });
+            }
         }
     },
 };
