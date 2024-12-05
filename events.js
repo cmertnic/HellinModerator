@@ -395,6 +395,54 @@ async function createLogChannel(interaction, channelName, botMember, higherRoles
         return i18next.t('events-js_logChannel_error', { channelName: channelName });
     }
 }
+// Функция для создания побочных голосовых каналов логирования
+async function createVoiceLogChannel(interaction, channelName, botMember, higherRoles) {
+    const result = await getOrCreateVoiceLogChannel(interaction.guild, channelName, botMember, higherRoles);
+    if (result) {
+        if (result.created) {
+            return i18next.t('events-js_logChannel_create', { channelName: channelName, createdChannelName: result.channel.name });
+        } else {
+            return i18next.t('events-js_logChannel_exists', { channelName: channelName, createdChannelName: result.channel.name });
+        }
+    } else {
+        return i18next.t('events-js_logChannel_error', { channelName: channelName });
+    }
+}
+
+// Функция для получения или создания голосового канала логирования
+async function getOrCreateVoiceLogChannel(guild, channelName, botMember, higherRoles) {
+    // Проверяем, существует ли канал с таким именем
+    const existingChannel = guild.channels.cache.find(channel => channel.name === channelName && channel.type === 'GUILD_VOICE');
+    if (existingChannel) {
+        return { created: false, channel: existingChannel };
+    }
+
+    // Создаем новый голосовой канал
+    try {
+        const newChannel = await guild.channels.create(channelName, {
+            type: 'GUILD_VOICE',
+            permissionOverwrites: [
+                {
+                    id: guild.id,
+                    allow: ['VIEW_CHANNEL'],
+                    deny: ['CONNECT'],
+                },
+                ...higherRoles.map(role => ({
+                    id: role.id,
+                    allow: ['VIEW_CHANNEL', 'CONNECT'],
+                })),
+                {
+                    id: botMember.id,
+                    allow: ['VIEW_CHANNEL', 'CONNECT'],
+                },
+            ],
+        });
+        return { created: true, channel: newChannel };
+    } catch (error) {
+        console.error(`Ошибка при создании голосового канала: ${error.message}`);
+        return null;
+    }
+}
 
 // Функция для создания роли мута
 async function createMutedRole(interaction, serverSettings) {
@@ -464,8 +512,8 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
                 .setTimestamp();
 
             await memberToMute.send({ embeds: [embed] });
-        } catch (error) {
-            console.error('Ошибка отправки сообщения:', error);
+        } catch  {
+
         }
     }
 
@@ -531,8 +579,8 @@ async function notifyUserAndLogWarn(interaction, memberToWarn, formattedDuration
                 .setTimestamp();
 
             await memberToWarn.send({ embeds: [embed] });
-        } catch (error) {
-            console.error('Ошибка отправки сообщения:', error);
+        } catch {
+
         }
     }
 
@@ -778,7 +826,7 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'applicationsLogChannelName', name: i18next.t('settings-js_buttons_name_35'), value: String(config.applicationsLogChannelName) },
         { key: 'applicationsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_36'), value: config.applicationsLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'randomRoomName', name: i18next.t('settings-js_buttons_name_37'), value: String(config.randomRoomName) },
-        { key: 'randomRoomNameUse', name: i18next.t('settings-js_buttons_name_37_2'), value: String(config.randomRoomName) },
+        { key: 'randomRoomNameUse', name: i18next.t('settings-js_buttons_name_37_2'), value: config.randomRoomNameUse=== 1 ? '✅' : '❌' },
         { key: 'loversRoleName', name: i18next.t('settings-js_buttons_name_38'), value: String(config.loversRoleName) },
         { key: 'supportRoleName', name: i18next.t('settings-js_buttons_name_39'), value: String(config.supportRoleName) },
         { key: 'podkastRoleName', name: i18next.t('settings-js_buttons_name_40'), value: String(config.podkastRoleName) },
@@ -937,15 +985,6 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
                     await questionUser .send({ embeds: [responseEmbed] });
                     await selectInteraction.followUp({ content: `Ваш ответ был отправлен <@${selectInteraction.user.id}>.`, ephemeral: true });
 
-                    // Set a reminder
-                    setTimeout(async () => {
-                        try {
-                            await questionUser .send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
-                        } catch (error) {
-                            console.error(`Не удалось отправить напоминание пользователю ${questionUser .tag}: ${error.message}`);
-                        }
-                    }, 3600000); // 1 hour
-
                     // Удаляем сообщение пользователя
                     await msg.delete().catch(console.error);
                 } catch (error) {
@@ -971,15 +1010,6 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
             // Отправляем ответ пользователю
             await questionUser .send({ embeds: [responseEmbed] });
             await selectInteraction.followUp({ content: `Вам был отправлен ответ от <@${selectInteraction.user.id}>.`, ephemeral: true });
-
-            // Set a reminder
-            setTimeout(async () => {
-                try {
-                    await questionUser .send({ content: `Напоминаю вам о вашем вопросе: "${questionContent}"` });
-                } catch (error) {
-                    console.error(`Не удалось отправить напоминание пользователю ${questionUser .tag}: ${error.message}`);
-                }
-            }, 3600000); // 1 hour
 
             // Удаляем сообщение выбора, если оно существует
             await selectInteraction.message.delete().catch(err => {
@@ -1026,6 +1056,7 @@ module.exports = {
     handleSelectInteraction,
     checkAntiRaidConditions,
     assignNewMemberRole,
-    ensureRolesExist
+    ensureRolesExist,
+    createVoiceLogChannel
 
 };

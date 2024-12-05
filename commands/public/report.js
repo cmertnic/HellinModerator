@@ -59,6 +59,7 @@ module.exports = {
             if (!logChannel) {
                 const channelNameToCreate = reportLogChannelNameUse ? reportLogChannelName : logChannelName;
                 const roles = interaction.guild.roles.cache;
+                const botMember = interaction.guild.members.me;
                 const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
                 const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles);
 

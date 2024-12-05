@@ -9,7 +9,7 @@ const { initializeDefaultServerSettings, getServerSettings } = require('./databa
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
+const { createLogChannel,createVoiceLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
@@ -183,12 +183,13 @@ const rest = new REST().setToken(process.env.TOKEN);
         // Обновляем язык для команды
         await initializeI18next(serverLanguage);
 
-        console.log(`Выполнение команды: ${interaction.commandName}`);
+        console.log(`Выполнение команды: ${interaction.commandName} от пользователя: ${interaction.user.tag} (ID: ${interaction.user.id})`);
         await command.execute(robot, interaction);
       } catch (error) {
-        console.error('Ошибка при выполнении команды:', error);
+        console.error(`Ошибка при выполнении команды от пользователя: ${interaction.user.tag} (ID: ${interaction.user.id}):`, error);
         await interaction.reply({ content: 'Произошла ошибка при выполнении команды!', ephemeral: true });
       }
+
     });
     // Событие при добавлении нового участника на сервер
     robot.on('guildMemberAdd', async (member) => {
@@ -350,7 +351,6 @@ const rest = new REST().setToken(process.env.TOKEN);
     });
     const chosenRoles = []; // Массив для хранения выбранных ролей
     let selectedRole; // Переменная для хранения последней выбранной роли
-
     robot.on(Events.InteractionCreate, async (interaction) => {
       // Обработка выбора роли из выпадающего меню
       if (interaction.isStringSelectMenu() && interaction.customId === 'roleSelect') {
@@ -362,9 +362,6 @@ const rest = new REST().setToken(process.env.TOKEN);
         }
 
         selectedRole = interaction.values[0]; // Сохраняем выбранную роль
-
-        // Добавляем выбранную роль в массив
-        chosenRoles.push(selectedRole);
 
         const modal = new ModalBuilder()
           .setCustomId('staffModal')
@@ -485,8 +482,7 @@ const rest = new REST().setToken(process.env.TOKEN);
           await interaction.reply({ content: 'Произошла ошибка при обработке вашей заявки. Пожалуйста, попробуйте снова.', ephemeral: true });
         }
       }
-    });
-    robot.on(Events.InteractionCreate, async (interaction) => {
+
       // Обработка выбора правила из выпадающего меню
       if (interaction.isStringSelectMenu() && interaction.customId === 'rulesSelect') {
         let imageUrls = [];
@@ -619,7 +615,7 @@ const rest = new REST().setToken(process.env.TOKEN);
           const roles = newState.guild.roles.cache;
           const botMember = newState.guild.members.me;
           const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-          await createLogChannel(newState, channelNameToCreate, botMember, higherRoles, serverSettings);
+          await createVoiceLogChannel(newState, channelNameToCreate, botMember, higherRoles, serverSettings);
           logChannel = newState.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
         }
 

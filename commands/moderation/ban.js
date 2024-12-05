@@ -36,6 +36,12 @@ module.exports = {
     try {
       const { member, guild } = interaction;
       const user = interaction.options.getMember(USER_OPTION_NAME);
+
+      // Проверка, существует ли пользователь на сервере
+      if (!user) {
+        return interaction.editReply({ content: i18next.t('пользователя нет на сервере'), ephemeral: true });
+      }
+
       const userId = user.id;
       const reason = interaction.options.getString(REASON_OPTION_NAME) || i18next.t('defaultReason');
       const deleteMessagesTime = interaction.options.getString(DEL_MESS_TIME_OPTION_NAME);
@@ -79,14 +85,18 @@ module.exports = {
       // Если канал логирования не существует, создаем его
       if (!logChannel) {
         const channelNameToCreate = banLogChannelNameUse ? banLogChannelName : logChannelName;
-        const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, guild.roles.cache.filter(role => role.comparePositionTo(botMember.roles.highest) > 0), serverSettings);
+        const roles = interaction.guild.roles.cache;
+        const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+        const logChannelCreationResult = await createLogChannel(interaction, channelNameToCreate, botMember, higherRoles, serverSettings);
 
+        // Выход из функции, если произошла ошибка при создании канала
         if (logChannelCreationResult.startsWith('Ошибка')) {
-          return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+            return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
         }
 
-        logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-      }
+        // Переопределяем переменную logChannel, так как она теперь может содержать новый канал
+        logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
+    }
 
       // Баним пользователя с указанной причиной и удаляем его сообщения, если это разрешено
       await user.ban({ reason, days: deleteMessagesTime ? convertToMilliseconds(deleteMessagesTime) / (1000 * 60 * 60 * 24) : 0 });
