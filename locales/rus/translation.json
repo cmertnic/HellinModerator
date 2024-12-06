@@ -72,6 +72,7 @@
     "banlist-js_users_banned": "Страница {{current_page}} из {{total_pages}}",
     "BanMembers_user_check": "- у вас нет права BanMembers для использования этой команды.",
     "BanMembers_bot_check": "- у бота нет права BanMembers для блокировки пользователей.",
+    "ban-js_user_above_bot_or_author": "вы не можете банить  пользователей выше  вас",
     "clear-js_description": "очистка сообщений",
     "clear-js_amount": "число",
     "clear-js_amount_description": "число сообщений для очистки",

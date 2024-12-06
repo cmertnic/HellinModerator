@@ -47,7 +47,7 @@ module.exports = {
       const deleteMessagesTime = interaction.options.getString(DEL_MESS_TIME_OPTION_NAME);
       const serverSettings = await getServerSettings(guild.id);
       const logChannelName = serverSettings.logChannelName;
-      const banLogChannelName = serverSettings.banLogName;
+      const banLogChannelName = serverSettings.banLogChannelName;
       const banLogChannelNameUse = serverSettings.banLogChannelNameUse;
       const deletingMessagesFromBannedUsers = serverSettings.deletingMessagesFromBannedUsers;
       const moderator = interaction.user;
@@ -77,9 +77,9 @@ module.exports = {
       // Находим канал логирования на основе настроек сервера
       let logChannel;
       if (banLogChannelNameUse) {
-        logChannel = guild.channels.cache.find(ch => ch.name === banLogChannelName);
+        logChannel = guild.channels.cache?.find(ch => ch.name === banLogChannelName);
       } else {
-        logChannel = guild.channels.cache.find(ch => ch.name === logChannelName);
+        logChannel = guild.channels.cache?.find(ch => ch.name === logChannelName);
       }
 
       // Если канал логирования не существует, создаем его
@@ -91,12 +91,12 @@ module.exports = {
 
         // Выход из функции, если произошла ошибка при создании канала
         if (logChannelCreationResult.startsWith('Ошибка')) {
-            return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
+          return interaction.editReply({ content: logChannelCreationResult, ephemeral: true });
         }
 
         // Переопределяем переменную logChannel, так как она теперь может содержать новый канал
         logChannel = interaction.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-    }
+      }
 
       // Баним пользователя с указанной причиной и удаляем его сообщения, если это разрешено
       await user.ban({ reason, days: deleteMessagesTime ? convertToMilliseconds(deleteMessagesTime) / (1000 * 60 * 60 * 24) : 0 });

@@ -2,7 +2,7 @@
 require('dotenv').config();
 // Импортируем необходимые модули
 const path = require('path');
-const { PermissionsBitField,EmbedBuilder } = require('discord.js');
+const { PermissionsBitField, EmbedBuilder } = require('discord.js');
 const sqlite3 = require('sqlite3').verbose();
 const { getServerSettings } = require('../database/settingsDb');
 const { i18next } = require('../i18n');
@@ -67,15 +67,15 @@ async function saveWarningToDatabase(interaction, userIdToWarn, durationMs, reas
     const duration = Date.now() + durationMs;
 
     return new Promise((resolve, reject) => {
-        warningsDb.run(`INSERT INTO warnings (guildId, userId, duration, reason) VALUES (?, ?, ?, ?)`, 
-        [interaction.guild.id, userIdToWarn, duration, reason], function (err) {
-            if (err) {
-                console.error(`Ошибка при вставке в базу данных: ${err}`);
-                reject(err);
-            } else {
-                resolve(this.lastID);
-            }
-        });
+        warningsDb.run(`INSERT INTO warnings (guildId, userId, duration, reason) VALUES (?, ?, ?, ?)`,
+            [interaction.guild.id, userIdToWarn, duration, reason], function (err) {
+                if (err) {
+                    console.error(`Ошибка при вставке в базу данных: ${err}`);
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
     });
 }
 
@@ -109,7 +109,7 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
             ORDER BY duration DESC
             LIMIT 1
         )`;
-        
+
         warningsDb.run(query, [userId, guildId], async function (err) {
             if (err) {
                 console.error(`Ошибка при удалении предупреждения: ${err.message}`);
@@ -136,16 +136,16 @@ async function removeWarningFromDatabase(robot, guildId, userId) {
                         if (error.code === 10007) {
                             await removeUserWarningsFromDatabase(guildId, userId); // Удаляем информацию о пользователе
                             return; // Выход из функции, если участник не найден
-                        } 
+                        }
                     }
 
                     if (member && member.permissions.has(PermissionsBitField.Flags.SendMessages)) {
                         const messageEmbed = new EmbedBuilder()
-                            .setColor(0x00FF00) 
+                            .setColor(0x00FF00)
                             .setTitle(i18next.t('Ваше предупреждение было снято'))
                             .setImage('https://media.discordapp.net/attachments/1304707253735002153/1309214696448200724/fd0fa0ef44629b7dc12513dd39b27daa_1.png?ex=6740c4b3&is=673f7333&hm=c47dda9fa3ff4571e54773d7855e5beff3e84df3df52fa07022a68ef3dd78a17&=&format=webp&quality=lossless&width=550&height=276')
                             .setTimestamp();
-                    
+
                         await member.send({ embeds: [messageEmbed] }).catch(console.error);
                     }
                 }
@@ -207,26 +207,21 @@ async function removeExpiredWarnings(robot, guildId) {
     const warningLogChannelNameUse = serverSettings.warningLogChannelNameUse;
 
     const botMember = await guild.members.fetch(robot.user.id);
-    let logChannel = warningLogChannelNameUse 
+    let logChannel = warningLogChannelNameUse
         ? guild.channels.cache.find(ch => ch.name === warningLogChannelName)
         : guild.channels.cache.find(ch => ch.name === logChannelName);
 
     if (!logChannel) {
-        try {
-            const channelNameToCreate = warningLogChannelNameUse ? warningLogChannelName : logChannelName;
-            const higherRoles = guild.roles.cache.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-            const logChannelCreationResult = await createLogChannel(robot, guild, channelNameToCreate, botMember, higherRoles, serverSettings);
+        const channelNameToCreate = warningLogChannelNameUse ? warningLogChannelName : logChannelName;
+        const roles = guild.roles.cache;
+        const higherRoles = [...roles.values()].filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
+        const logChannelCreationResult = await createLogChannel(robot, guild, channelNameToCreate, botMember, higherRoles, serverSettings);
 
-            if (!logChannelCreationResult || !logChannelCreationResult.channel) {
-                console.error(`Ошибка при создании канала: ${logChannelCreationResult}`);
-                return; // Прерываем выполнение, если канал не был создан
-            }
-
-            logChannel = logChannelCreationResult.channel; // Используем созданный канал
-        } catch (error) {
-            console.error('Ошибка при создании канала:', error);
-            return; // Прерываем выполнение в случае ошибки
+        if (logChannelCreationResult.startsWith('Ошибка')) {
+            console.error(`Ошибка при создании канала: ${logChannelCreationResult}`);
         }
+
+        logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
     }
 
     const expiredWarnings = await getExpiredWarnings(robot, guildId);

@@ -687,7 +687,7 @@ const rest = new REST().setToken(process.env.TOKEN);
               }
 
               // Удаление истекших предупреждений и мутов
-              await removeExpiredWarnings(robot, guild.id, serverSettings);
+              await removeExpiredWarnings(robot, guild.id);
               await removeExpiredMutes(robot, guild.id);
 
             } catch (error) {
