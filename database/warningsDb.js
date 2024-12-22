@@ -201,28 +201,6 @@ async function getAllActiveWarnings(guildId) {
 // Функция для удаления истекших предупреждений
 async function removeExpiredWarnings(robot, guildId) {
     const guild = robot.guilds.cache.get(guildId);
-    const serverSettings = await getServerSettings(guildId);
-    const logChannelName = serverSettings.logChannelName;
-    const warningLogChannelName = serverSettings.warningLogChannelName;
-    const warningLogChannelNameUse = serverSettings.warningLogChannelNameUse;
-
-    const botMember = await guild.members.fetch(robot.user.id);
-    let logChannel = warningLogChannelNameUse
-        ? guild.channels.cache.find(ch => ch.name === warningLogChannelName)
-        : guild.channels.cache.find(ch => ch.name === logChannelName);
-
-    if (!logChannel) {
-        const channelNameToCreate = warningLogChannelNameUse ? warningLogChannelName : logChannelName;
-        const roles = guild.roles.cache;
-        const higherRoles = [...roles.values()].filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-        const logChannelCreationResult = await createLogChannel(robot, guild, channelNameToCreate, botMember, higherRoles, serverSettings);
-
-        if (logChannelCreationResult.startsWith('Ошибка')) {
-            console.error(`Ошибка при создании канала: ${logChannelCreationResult}`);
-        }
-
-        logChannel = guild.channels.cache.find(ch => ch.name === channelNameToCreate);
-    }
 
     const expiredWarnings = await getExpiredWarnings(robot, guildId);
     if (!expiredWarnings || expiredWarnings.length === 0) {

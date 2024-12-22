@@ -9,7 +9,7 @@ const { initializeDefaultServerSettings, getServerSettings } = require('./databa
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel,createVoiceLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
+const { createLogChannel,getOrCreateVoiceChannel, createVoiceLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
@@ -612,10 +612,8 @@ const rest = new REST().setToken(process.env.TOKEN);
         // Проверка наличия канала для логирования
         if (!logChannel) {
           const channelNameToCreate = randomRoomNameUse ? randomRoomName : logChannelName;
-          const roles = newState.guild.roles.cache;
           const botMember = newState.guild.members.me;
-          const higherRoles = roles.filter(role => botMember.roles.highest.comparePositionTo(role) < 0);
-          await createVoiceLogChannel(newState, channelNameToCreate, botMember, higherRoles, serverSettings);
+          await getOrCreateVoiceChannel(newState.guild, channelNameToCreate, botMember);
           logChannel = newState.guild.channels.cache.find(ch => ch.name === channelNameToCreate);
         }
 
@@ -687,7 +685,7 @@ const rest = new REST().setToken(process.env.TOKEN);
               }
 
               // Удаление истекших предупреждений и мутов
-              await removeExpiredWarnings(robot, guild.id);
+              await removeExpiredWarnings(robot, guild.id, serverSettings);
               await removeExpiredMutes(robot, guild.id);
 
             } catch (error) {

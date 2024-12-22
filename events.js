@@ -305,7 +305,7 @@ async function createMainLogChannel(interaction, channelName, botMember, higherR
     }
 }
 
-// Функция получения или создания лог-канала
+// Функция получения или создания текстового канала
 async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles) {
     const message = i18next.t('events-js_logChannel_reason');
     let fetchedChannels = await guild.channels.fetch();
@@ -349,6 +349,8 @@ async function getOrCreateLogChannel(guild, channelName, botMember, higherRoles)
         }
     }
 }
+
+// Функция получения или создания голосового канала
 async function getOrCreateVoiceChannel(guild, channelName, botMember) {
     const fetchedChannels = await guild.channels.fetch();
     const existingChannel = fetchedChannels.find(c => c.name === channelName && c.type === ChannelType.GuildVoice);
@@ -382,6 +384,8 @@ async function getOrCreateVoiceChannel(guild, channelName, botMember) {
         }
     }
 }
+
+
 // Функция для создания побочных каналов логирования
 async function createLogChannel(interaction, channelName, botMember, higherRoles) {
     const result = await getOrCreateLogChannel(interaction.guild, channelName, botMember, higherRoles);
@@ -409,23 +413,41 @@ async function createVoiceLogChannel(interaction, channelName, botMember, higher
     }
 }
 
+// Функция для создания голосового канала логирования
+async function createVoiceLogChannel(interaction, channelName, botMember, higherRoles) {
+    const result = await getOrCreateVoiceLogChannel(interaction.guild, channelName, botMember, higherRoles);
+    if (result) {
+        if (result.created) {
+            return i18next.t('events-js_logChannel_create', { channelName: channelName, createdChannelName: result.channel.name });
+        } else {
+            return i18next.t('events-js_logChannel_exists', { channelName: channelName, createdChannelName: result.channel.name });
+        }
+    } else {
+        return i18next.t('events-js_logChannel_error', { channelName: channelName });
+    }
+}
+
 // Функция для получения или создания голосового канала логирования
 async function getOrCreateVoiceLogChannel(guild, channelName, botMember, higherRoles) {
     // Проверяем, существует ли канал с таким именем
-    const existingChannel = guild.channels.cache.find(channel => channel.name === channelName && channel.type === 'GUILD_VOICE');
+    const existingChannel = guild.channels.cache.find(channel => channel.name === channelName && channel.type === ChannelType.GuildVoice);
     if (existingChannel) {
         return { created: false, channel: existingChannel };
     }
 
+    // Генерируем случайное имя, если канал не найден
+    const randomSuffix = Math.floor(Math.random() * 1000); // Генерируем случайное число от 0 до 999
+    const newChannelName = `${channelName}-${randomSuffix}`; // Создаем новое имя канала
+
     // Создаем новый голосовой канал
     try {
-        const newChannel = await guild.channels.create(channelName, {
-            type: 'GUILD_VOICE',
+        const newChannel = await guild.channels.create(newChannelName, {
+            type: ChannelType.GuildVoice,
             permissionOverwrites: [
                 {
-                    id: guild.id,
+                    id: guild.roles.everyone,
                     allow: ['VIEW_CHANNEL'],
-                    deny: ['CONNECT'],
+                    deny: ['SEND_MESSAGES', 'CONNECT'],
                 },
                 ...higherRoles.map(role => ({
                     id: role.id,
@@ -443,6 +465,7 @@ async function getOrCreateVoiceLogChannel(guild, channelName, botMember, higherR
         return null;
     }
 }
+
 
 // Функция для создания роли мута
 async function createMutedRole(interaction, serverSettings) {
@@ -512,7 +535,7 @@ async function notifyUserAndLogMute(interaction, memberToMute, botMember, reason
                 .setTimestamp();
 
             await memberToMute.send({ embeds: [embed] });
-        } catch  {
+        } catch {
 
         }
     }
@@ -826,7 +849,7 @@ async function displaySettings(interaction, config, page = 1) {
         { key: 'applicationsLogChannelName', name: i18next.t('settings-js_buttons_name_35'), value: String(config.applicationsLogChannelName) },
         { key: 'applicationsLogChannelNameUse', name: i18next.t('settings-js_buttons_name_36'), value: config.applicationsLogChannelNameUse === 1 ? '✅' : '❌' },
         { key: 'randomRoomName', name: i18next.t('settings-js_buttons_name_37'), value: String(config.randomRoomName) },
-        { key: 'randomRoomNameUse', name: i18next.t('settings-js_buttons_name_37_2'), value: config.randomRoomNameUse=== 1 ? '✅' : '❌' },
+        { key: 'randomRoomNameUse', name: i18next.t('settings-js_buttons_name_37_2'), value: config.randomRoomNameUse === 1 ? '✅' : '❌' },
         { key: 'loversRoleName', name: i18next.t('settings-js_buttons_name_38'), value: String(config.loversRoleName) },
         { key: 'supportRoleName', name: i18next.t('settings-js_buttons_name_39'), value: String(config.supportRoleName) },
         { key: 'podkastRoleName', name: i18next.t('settings-js_buttons_name_40'), value: String(config.podkastRoleName) },
@@ -944,7 +967,7 @@ async function ensureRolesExist(guild, roleName) {
     return role;
 }
 
-async function handleSelectInteraction(helpChannel, selectInteraction, questionUser , questionContent) {
+async function handleSelectInteraction(helpChannel, selectInteraction, questionUser, questionContent) {
     try {
         // Check if the interaction has already been processed
         if (selectInteraction.replied || selectInteraction.deferred) return;
@@ -970,7 +993,7 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
             const responsePrompt = 'Пожалуйста, введите свой ответ в чате.';
             await selectInteraction.followUp({ content: responsePrompt, ephemeral: true });
 
-            const filter = msg => msg.author.id === questionUser .id && !msg.author.bot;
+            const filter = msg => msg.author.id === questionUser.id && !msg.author.bot;
             const collector = selectInteraction.channel.createMessageCollector({ filter, max: 1, time: 60000 });
 
             collector.on('collect', async (msg) => {
@@ -982,13 +1005,13 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
                         .addFields({ name: 'Ваш вопрос:', value: questionContent })
                         .setTimestamp();
 
-                    await questionUser .send({ embeds: [responseEmbed] });
+                    await questionUser.send({ embeds: [responseEmbed] });
                     await selectInteraction.followUp({ content: `Ваш ответ был отправлен <@${selectInteraction.user.id}>.`, ephemeral: true });
 
                     // Удаляем сообщение пользователя
                     await msg.delete().catch(console.error);
                 } catch (error) {
-                    console.error(`Не удалось отправить личное сообщение пользователю ${questionUser .tag}: ${error.message}`);
+                    console.error(`Не удалось отправить личное сообщение пользователю ${questionUser.tag}: ${error.message}`);
                     await selectInteraction.followUp({ content: 'Не удалось отправить вам личное сообщение. Проверьте настройки конфиденциальности.', ephemeral: true });
                 }
             });
@@ -1008,7 +1031,7 @@ async function handleSelectInteraction(helpChannel, selectInteraction, questionU
                 .setTimestamp();
 
             // Отправляем ответ пользователю
-            await questionUser .send({ embeds: [responseEmbed] });
+            await questionUser.send({ embeds: [responseEmbed] });
             await selectInteraction.followUp({ content: `Вам был отправлен ответ от <@${selectInteraction.user.id}>.`, ephemeral: true });
 
             // Удаляем сообщение выбора, если оно существует
