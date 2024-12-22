@@ -2,14 +2,14 @@
 require('dotenv').config();
 
 // Импортируем необходимые модули
-const { Client, GatewayIntentBits, Partials, Collection, ChannelType, REST, Routes, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection, ChannelType, REST, Routes, EmbedBuilder, PermissionsBitField, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const fs = require('fs');
 const cron = require('node-cron');
 const { initializeDefaultServerSettings, getServerSettings } = require('./database/settingsDb');
 const { removeExpiredWarnings } = require('./database/warningsDb');
 const { removeExpiredMutes } = require('./database/mutesDb');
 const { initializeI18next, i18next, t } = require('./i18n');
-const { createLogChannel,getOrCreateVoiceChannel, createVoiceLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
+const { createLogChannel, getOrCreateVoiceChannel, createVoiceLogChannel, createRoles, ensureRolesExist, checkAntiRaidConditions, assignNewMemberRole } = require('./events');
 
 // Инициализируем массивы для хранения черного списка и плохих ссылок
 let blacklist = [];
@@ -625,6 +625,11 @@ const rest = new REST().setToken(process.env.TOKEN);
           // Здесь вы можете задать свои критерии для выбора каналов
           const TARGET_CHANNELS = allVoiceChannels
             .filter(channel => channel.name.toLowerCase() !== randomRoomName.toLowerCase()) // Исключаем текущую комнату
+            .filter(channel => {
+              // Проверяем, есть ли у пользователя доступ к каналу
+              const permissions = channel.permissionsFor(newState.member);
+              return permissions.has(PermissionsBitField.Flags.Connect); // Используем PermissionsBitField.Flags.Connect
+            })
             .map(channel => channel.name); // Получаем имена каналов
 
           if (TARGET_CHANNELS.length > 0) {
